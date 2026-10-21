@@ -1,75 +1,60 @@
-# GTCO Stock Tracker: APMC Agent Ledger & Inventory Platform
+# GTCO Stock Tracker - APMC Agent Ledger & Inventory Platform
 
 > **Domain:** Agricultural Produce Market Committee (APMC)  
 > **Target User:** Commission Agent / Arhatiya  
-> **Scope:** Inward, Lot Generation, Weighing, Sale, and Loose Stock Ledger  
-> **Version:** 1.0 (Production Ready)
+> **Architecture:** Master-Driven Ledger (inspired by Paisabhai)  
+> **Deployment:** GitHub Pages (Serverless Client-Side Single Page Application)
 
 ---
 
-## 🌾 Overview & Business Objective
+## 🌾 Overview & Philosophy
 
-APMC trading involves receiving unweighed agricultural commodities from farmers, storing them safely until market prices are favorable, executing lot-based sales to buyers in standard 50 kg bag units, settling accounts, and tracking residual loose stock quantities.
+**GTCO Stock Tracker** is built specifically for APMC mandi commission agents (*Arhatiyas*). 
 
-### Key Domain Challenge Addressed
-When unweighed farmer lots are eventually weighed into standard 50 kg units, discrepancies arise (for example, 10 unweighed bags may yield 11 bags and 25 kg loose). Buyers purchase whole bags only. **GTCO Stock Tracker** accurately splits sales by bill number while crediting remaining loose quantities back to the specific farmer's account and tracking shop inventory.
-
----
-
-## 📦 Commodity Master Data
-
-Standard bag unit across all commodities is fixed at **50 kg**:
-
-| Code | Commodity Name | Local / Regional Name | Standard Bag Unit | Lot Prefix |
-| :--- | :--- | :--- | :--- | :--- |
-| **TR** | Pigeon Pea | Toor / Tuvar | 50 kg | `T` (e.g., T01) |
-| **CH** | Bengal Gram | Chana | 50 kg | `C` (e.g., C01) |
-| **MG** | Green Gram | Moong | 50 kg | `M` (e.g., M01) |
-| **UD** | Black Gram | Urad / Matt Pe | 50 kg | `U` (e.g., U01) |
-| **JW** | Sorghum | Jowar | 50 kg | `J` (e.g., J01) |
-| **SF** | Safflower | Kusub | 50 kg | `S` (e.g., S01) |
+### 100% Master-Driven (Zero Hardcoded Demo Data)
+Just like an Excel Master Tab, the platform **contains zero hardcoded demo data**. You have total control to add, edit, and manage:
+- **Farmers Directory:** Add your own farmers (Name, Mobile, Village, Notes).
+- **Commodities Master:** Add your own commodities (Name, Regional/Mandi Name, Code, Bag Size in kg [default 50kg], Lot Prefix like `T`, `C`, etc.).
+- **Storage Locations Master:** Add your own godowns, floor bins, sheds, and bays.
+- **Buyers Directory:** Register grain companies, traders, and mandi buyers.
 
 ---
 
-## 🔄 Core Workflows
+## 🔍 Multi-Criteria Search & Stock Isolation
 
-### 1. Inward Storing & Lot Numbering
-- **Inward Entry:** Captures Inward Date & Time, Farmer Name, Commodity Type, Raw Unweighed Bag Count, and Godown/Bin Storage Location.
-- **Dynamic Lot ID Generation:** Automatically assigns unique sequential Lot IDs prefixed by commodity (e.g., `T01`, `C03`, `M02`).
-- **Initial Status:** Marked as `"Stored (Unweighed)"` until the farmer decides market prices are favorable.
-
-### 2. Weighing, Buyer Sale & Loose Stock Settlement
-- Produce is brought to the scale and weighed strictly into 50 kg bag capacities.
-- **Mathematical Settlement:**
-  - $\text{Total Net Weight (kg)} = (\text{Sold Bags} \times 50) + \text{Residual Loose (kg)}$
-  - **Buyer Billing:** Billed only for whole bags under generated Bill #[Bill_Number].
-  - **Farmer Settlement:** Farmer is credited for both whole bags and loose weight.
-  - **Shop Loose Ledger:** Residual loose stock (0–49 kg) transfers to Shop Loose Stock Inventory under the farmer's ledger.
-
-### 3. Commercial Audit Trail & Sale Ledger
-Maintains an immutable record of:
-- Bill Number (e.g., `BILL-2026-0412`)
-- Buyer Name (e.g., `Shree Traders`)
-- Lot ID (`T01`)
-- Sold Standard Bags (50 kg)
-- Residual Loose (kg)
-- Farmer Account Credited
-
-### 4. Real-Time APMC Dashboard
-- **Active Unweighed Stock:** Raw bags stored across godowns.
-- **Weighed Lots Pending Sale:** Lots ready for auction or buyer assignment.
-- **Cumulative Loose Stock Balances:** Live per-farmer and total shop loose inventory balances.
+The platform features an instant search and dynamic filtering bar:
+- **Filter by Farmer:** Isolates all inward lots, sales transactions, and residual loose stock balances for that specific farmer.
+- **Filter by Commodity:** Isolates all active godown stock, sold bags, and loose quantities for that commodity.
+- **Filter by Godown Location:** Quickly audit stock resting in a specific warehouse bin.
+- **Universal Text Search:** Live-filters simultaneously across Farmer, Commodity, Lot ID, Location, Bill Number, and Buyer.
+- **Dynamic KPI Cards:** The top summary cards instantly recalculate to show the exact totals for the filtered farmer or commodity!
 
 ---
 
-## 🚀 Quick Start
+## ⚖️ Standard 50kg Weighing & Commercial Split Engine
 
-1. Open `index.html` in any modern web browser:
-   ```powershell
-   Start-Process "index.html"
-   ```
-2. Or serve using any local static file server.
-3. All data is persisted automatically in `localStorage` with options to export/backup as JSON.
+When unweighed farmer produce is brought to the scale:
+1. **Scale Standardization:** 
+   $$\text{Total Net Weight (kg)} = (\text{Sold Whole Bags} \times 50) + \text{Residual Loose (kg)}$$
+2. **Buyer Billing:** Buyers purchase strictly whole 50 kg bags under an auto-generated Bill Number.
+3. **Farmer Account Settlement:** Farmer is credited for both whole bags and residual loose weight.
+4. **Shop Loose Stock:** Residual loose stock ($0 \le \text{loose} < 50\text{ kg}$) is automatically deposited into the Shop Loose Inventory mapped to that farmer's ledger.
+
+---
+
+## 📊 Two-Way Excel Synchronization (SheetJS)
+
+Export your complete APMC ledger to a formatted Excel workbook with one click:
+- `Inward_Produce`
+- `Sales_Audit_Ledger`
+- `Master_Farmers`
+- `Master_Commodities`
+
+---
+
+## 🚀 Live Demo
+Access the live platform on GitHub Pages:
+**[https://smpneel0212-commits.github.io/GTCO-STOCK-TRACKEr/](https://smpneel0212-commits.github.io/GTCO-STOCK-TRACKEr/)**
 
 ---
 

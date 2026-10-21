@@ -1,0 +1,67 @@
+/* GTCO Stock Tracker - Custom Stylesheet */
+
+.nav-tab.active {
+  background-color: #ffffff;
+  color: #15803d;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.mob-nav-tab.active {
+  color: #15803d;
+  border-top: 2px solid #15803d;
+}
+
+.view-panel {
+  display: none;
+}
+
+.view-panel.active {
+  display: block;
+}
+
+.master-subtab.active {
+  background-color: #15803d;
+  color: #ffffff;
+}
+
+.app-modal.show {
+  display: flex !important;
+}
+
+.lot-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.375rem;
+  color: #0f172a;
+  display: inline-block;
+}
+
+.loose-badge {
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-weight: 700;
+  border: 1px solid #fecaca;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.375rem;
+  display: inline-block;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #invoice-print-area, #invoice-print-area * {
+    visibility: visible;
+  }
+  #invoice-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+  }
+}
