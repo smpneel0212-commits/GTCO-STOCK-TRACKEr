@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTCO Stock Tracker - APMC Agent Ledger & Inventory Platform</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Top App Navigation -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-badge">APMC</div>
+      <div>
+        <h1 class="brand-title">GTCO Stock Tracker</h1>
+        <p class="brand-subtitle">Commission Agent / Arhatiya Mandi Ledger & Inventory Engine</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="mandi-pill"><span class="status-dot"></span> Mandi Season 2026 Live</span>
+      <button id="btn-export-json" class="btn btn-outline" title="Backup Ledger as JSON">Export Data</button>
+      <button id="btn-reset-data" class="btn btn-ghost" title="Reset to Sample Mandi Data">Reset Data</button>
+      <button id="btn-new-inward" class="btn btn-primary">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        New Farmer Inward
+      </button>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <!-- Real-time KPI Stats Banner -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon icon-amber">📦</div>
+        <div class="kpi-details">
+          <span class="kpi-label">Active Unweighed Stock</span>
+          <div class="kpi-value" id="kpi-unweighed-bags">0 <span class="unit">bags</span></div>
+          <span class="kpi-sub" id="kpi-unweighed-lots">0 lots stored</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon icon-blue">⚖️</div>
+        <div class="kpi-details">
+          <span class="kpi-label">Weighed & Sold Units</span>
+          <div class="kpi-value" id="kpi-sold-bags">0 <span class="unit">bags (50kg)</span></div>
+          <span class="kpi-sub" id="kpi-total-quintals">0.00 Quintals gross</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon icon-emerald">🌾</div>
+        <div class="kpi-details">
+          <span class="kpi-label">Shop Loose Stock Balances</span>
+          <div class="kpi-value" id="kpi-loose-kg">0 <span class="unit">kg</span></div>
+          <span class="kpi-sub" id="kpi-farmers-with-loose">Across 0 farmers</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon icon-purple">📄</div>
+        <div class="kpi-details">
+          <span class="kpi-label">Total Commercial Sales</span>
+          <div class="kpi-value" id="kpi-bills-count">0 <span class="unit">bills</span></div>
+          <span class="kpi-sub">Strict 50 kg standard units</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="ledger-tabs">
+      <button class="tab-btn active" data-tab="inward-tab">
+        Inward Lots <span class="tab-badge" id="tab-inward-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="sales-tab">
+        Sale & Audit Ledger <span class="tab-badge" id="tab-sales-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="loose-tab">
+        Farmer Loose Stock Ledger <span class="tab-badge" id="tab-loose-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="commodity-tab">
+        Commodity Master (50kg Unit)
+      </button>
+    </nav>
+
+    <!-- TAB 1: Inward Lots -->
+    <section id="inward-tab" class="tab-content active">
+      <div class="panel-header">
+        <div>
+          <h2>Farmer Arrivals & Inward Lots</h2>
+          <p>Unweighed lots deposited by farmers awaiting favorable market prices</p>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="inward-search" class="search-input" placeholder="Search by Farmer, Lot ID, Godown...">
+          <select id="inward-filter-status" class="filter-select">
+            <option value="ALL">All Statuses</option>
+            <option value="Stored (Unweighed)">Stored (Unweighed)</option>
+            <option value="Weighed & Sold">Weighed & Sold</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" id="inward-table">
+          <thead>
+            <tr>
+              <th>Lot ID</th>
+              <th>Inward Date & Time</th>
+              <th>Farmer Name</th>
+              <th>Commodity</th>
+              <th>Raw Unweighed Bags</th>
+              <th>Storage Location</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="inward-table-body">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: Sales Ledger -->
+    <section id="sales-tab" class="tab-content">
+      <div class="panel-header">
+        <div>
+          <h2>APMC Commercial Sale Ledger</h2>
+          <p>Lot-based transactions split by standard 50 kg whole bags and residual loose weight</p>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="sales-search" class="search-input" placeholder="Search Bill #, Buyer, Lot, Farmer...">
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" id="sales-table">
+          <thead>
+            <tr>
+              <th>Bill Number</th>
+              <th>Date & Time</th>
+              <th>Buyer Name</th>
+              <th>Lot ID</th>
+              <th>Sold Bags (50 kg)</th>
+              <th>Residual Loose (kg)</th>
+              <th>Farmer Account Credited</th>
+              <th>Total Weighed (kg)</th>
+              <th>Audit Slip</th>
+            </tr>
+          </thead>
+          <tbody id="sales-table-body">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 3: Farmer Loose Stock Ledger -->
+    <section id="loose-tab" class="tab-content">
+      <div class="panel-header">
+        <div>
+          <h2>Farmer Loose Stock Inventory Ledger</h2>
+          <p>Cumulative residual unbagged quantities (0–49 kg) credited to farmers and held in shop stock</p>
+        </div>
+      </div>
+
+      <div class="grid-2-col">
+        <div class="card">
+          <div class="card-header">
+            <h3>Cumulative Farmer Balances</h3>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Farmer Name</th>
+                  <th>Commodity</th>
+                  <th>Accumulated Loose</th>
+                  <th>Equivalent Bags</th>
+                  <th>Remaining Loose</th>
+                </tr>
+              </thead>
+              <tbody id="loose-summary-body">
+                <!-- Summary rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Loose Credit Activity Log</h3>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Bill Ref</th>
+                  <th>Farmer</th>
+                  <th>Lot</th>
+                  <th>Loose Credited</th>
+                  <th>Shop Inventory Impact</th>
+                </tr>
+              </thead>
+              <tbody id="loose-audit-body">
+                <!-- Audit rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Commodity Master -->
+    <section id="commodity-tab" class="tab-content">
+      <div class="panel-header">
+        <div>
+          <h2>APMC Commodity Master Data</h2>
+          <p>Configured standardized bag sizes and dynamic lot sequence prefixes</p>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Common Name</th>
+              <th>Local / Regional Name</th>
+              <th>Standard Bag Unit</th>
+              <th>Auto Lot Prefix</th>
+              <th>Current Lots Registered</th>
+            </tr>
+          </thead>
+          <tbody id="commodity-table-body">
+            <!-- Dynamic commodities -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: Inward Entry Form -->
+  <div id="modal-inward" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>Record Farmer Inward Entry</h3>
+          <p>Produce arrives in unweighed raw bags from farmer</p>
+        </div>
+        <button class="modal-close" data-close="modal-inward">&times;</button>
+      </div>
+      <form id="form-inward">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="inward-commodity">Commodity Type *</label>
+            <select id="inward-commodity" required>
+              <option value="" disabled selected>Select Commodity</option>
+              <option value="TR">Toor / Tuvar (Pigeon Pea) [50 kg]</option>
+              <option value="CH">Chana (Bengal Gram) [50 kg]</option>
+              <option value="MG">Moong (Green Gram) [50 kg]</option>
+              <option value="UD">Urad / Matt Pe (Black Gram) [50 kg]</option>
+              <option value="JW">Jowar (Sorghum) [50 kg]</option>
+              <option value="SF">Kusub (Safflower) [50 kg]</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inward-lot-preview">Assigned Lot ID (Auto)</label>
+            <input type="text" id="inward-lot-preview" readonly class="input-readonly" value="Auto-generated">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="inward-farmer">Farmer Name *</label>
+            <input type="text" id="inward-farmer" placeholder="e.g. Ramesh Patil" required>
+          </div>
+          <div class="form-group">
+            <label for="inward-datetime">Arrival Date & Time *</label>
+            <input type="datetime-local" id="inward-datetime" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="inward-bags">Unweighed Raw Bags Count *</label>
+            <input type="number" id="inward-bags" min="1" placeholder="e.g. 10" required>
+          </div>
+          <div class="form-group">
+            <label for="inward-location">Storage Location *</label>
+            <input type="text" id="inward-location" placeholder="e.g. Godown No. 2, Bin B" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modal-inward">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Inward Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Weighing & Sale Settlement -->
+  <div id="modal-sale" class="modal-backdrop">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>Weighing, Buyer Sale & Loose Stock Settlement</h3>
+          <p>Lot brought to scale for standardized 50 kg weighing and billing</p>
+        </div>
+        <button class="modal-close" data-close="modal-sale">&times;</button>
+      </div>
+
+      <form id="form-sale">
+        <input type="hidden" id="sale-lot-id">
+
+        <!-- Lot Summary Callout -->
+        <div class="callout-box">
+          <div class="callout-col">
+            <span class="callout-label">Lot ID</span>
+            <span class="callout-value font-mono" id="sale-lot-display">--</span>
+          </div>
+          <div class="callout-col">
+            <span class="callout-label">Farmer</span>
+            <span class="callout-value" id="sale-farmer-display">--</span>
+          </div>
+          <div class="callout-col">
+            <span class="callout-label">Commodity</span>
+            <span class="callout-value" id="sale-commodity-display">--</span>
+          </div>
+          <div class="callout-col">
+            <span class="callout-label">Unweighed Bags</span>
+            <span class="callout-value" id="sale-unweighed-display">--</span>
+          </div>
+        </div>
+
+        <!-- Scale Weighing Input -->
+        <div class="calc-section">
+          <h4>1. Scale Weighing Calculation</h4>
+          <p class="section-desc">Enter either the total scale net weight OR standard 50 kg bags plus loose kg.</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sale-total-weight">Total Scale Net Weight (kg)</label>
+              <input type="number" step="0.1" id="sale-total-weight" placeholder="e.g. 575">
+            </div>
+            <div class="form-group divider-center">
+              <span>— OR DIRECT —</span>
+            </div>
+            <div class="form-group">
+              <label for="sale-sold-bags">Standard 50 kg Bags</label>
+              <input type="number" id="sale-sold-bags" min="0" placeholder="e.g. 11" required>
+            </div>
+            <div class="form-group">
+              <label for="sale-residual-loose">Residual Loose (kg) [0-49 kg]</label>
+              <input type="number" step="0.1" id="sale-residual-loose" min="0" max="49.99" placeholder="e.g. 25" required>
+            </div>
+          </div>
+
+          <div class="calc-live-pill" id="calc-breakdown-text">
+            Standard Breakdown: 0 Bags (0 kg) + 0 kg Loose = 0 kg Net
+          </div>
+        </div>
+
+        <!-- Buyer & Commercial Billing -->
+        <div class="calc-section">
+          <h4>2. Buyer Commercial Billing & Invoice</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sale-bill-number">Bill Number *</label>
+              <input type="text" id="sale-bill-number" required class="font-mono">
+            </div>
+            <div class="form-group">
+              <label for="sale-buyer-name">Buyer / Trader Name *</label>
+              <input type="text" id="sale-buyer-name" placeholder="e.g. Shree Traders" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sale-rate">Rate per Quintal (100 kg) ₹</label>
+              <input type="number" id="sale-rate" placeholder="e.g. 7200" value="7000">
+            </div>
+            <div class="form-group">
+              <label for="sale-buyer-amount">Buyer Payable (Whole 50kg Bags Only)</label>
+              <input type="text" id="sale-buyer-amount" readonly class="input-readonly font-mono" value="₹ 0.00">
+            </div>
+          </div>
+        </div>
+
+        <!-- Settlement Split Preview -->
+        <div class="settlement-preview">
+          <h4>Settlement Ledger Summary</h4>
+          <div class="split-columns">
+            <div class="split-card buyer-side">
+              <h5>Buyer Transaction</h5>
+              <p>Purchases strictly whole 50 kg bags. Excludes loose quantities.</p>
+              <div class="split-stat"><strong>Billed:</strong> <span id="preview-buyer-bags">0</span> Standard 50 kg Bags</div>
+            </div>
+            <div class="split-card farmer-side">
+              <h5>Farmer Settlement & Account Credit</h5>
+              <p>Farmer is credited for whole bags yield + residual loose weight.</p>
+              <div class="split-stat"><strong>Credit:</strong> <span id="preview-farmer-summary">0 Bags + 0 kg</span></div>
+            </div>
+            <div class="split-card shop-side">
+              <h5>Shop Inventory Transfer</h5>
+              <p>Residual loose stock transferred to shop loose inventory under farmer ledger.</p>
+              <div class="split-stat"><strong>Stock Inward:</strong> <span id="preview-loose-kg">0 kg</span> loose</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modal-sale">Cancel</button>
+          <button type="submit" class="btn btn-success">Finalize Weighing & Generate Bill</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Printable Audit Bill Slip -->
+  <div id="modal-invoice" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>APMC Commercial Sale Slip (Sauda Chitthi)</h3>
+        <button class="modal-close" data-close="modal-invoice">&times;</button>
+      </div>
+      <div id="invoice-print-area" class="invoice-box">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modal-invoice">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">Print Slip</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
