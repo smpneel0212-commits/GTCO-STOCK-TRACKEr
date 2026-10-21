@@ -1,12 +1,20 @@
 /**
  * GTCO Stock Tracker - APMC Agent Ledger & Inventory Platform
  * Master-driven architecture inspired by Paisabhai.
+ * Protected with Paisabhai Cross-Device Access Lock (SHARNU PATIL / 02161301).
  * Zero hardcoded demo transactions. User-defined Farmers, Commodities, Locations & Buyers.
  * Real-time dynamic multi-criteria search & isolation by Farmer, Commodity, or Location.
  */
 
 (function () {
   'use strict';
+
+  // Authentication configuration matching Paisabhai
+  const AUTH_CONFIG = {
+    username: 'SHARNU PATIL',
+    password: '02161301',
+    storageKey: 'gtco_auth_session_v1'
+  };
 
   const STORAGE_KEY = 'gtco_stock_tracker_v2';
 
@@ -33,6 +41,7 @@
         status: ''
       };
       this.quickAddCallback = null;
+      this.isAuthenticated = false;
     }
 
     loadState() {
@@ -61,6 +70,99 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     }
 
+    // -------------------------------------------------------------
+    // AUTHENTICATION LOGIC (PAISABHAI COMPATIBLE)
+    // -------------------------------------------------------------
+    checkAuth() {
+      const isAuth = localStorage.getItem(AUTH_CONFIG.storageKey) === 'true';
+      if (isAuth) {
+        this.isAuthenticated = true;
+        this.showAppShell();
+        this.init();
+      } else {
+        this.isAuthenticated = false;
+        this.showLoginView();
+      }
+    }
+
+    showLoginView() {
+      const loginView = document.getElementById('view-login');
+      const appShell = document.getElementById('app-shell');
+      if (loginView) loginView.classList.remove('hidden');
+      if (appShell) appShell.classList.add('hidden');
+      const usernameEl = document.getElementById('login-username');
+      if (usernameEl) {
+        usernameEl.value = '';
+        setTimeout(() => usernameEl.focus(), 150);
+      }
+      const passEl = document.getElementById('login-password');
+      if (passEl) passEl.value = '';
+      const errEl = document.getElementById('login-error');
+      if (errEl) errEl.classList.add('hidden');
+      this.initLucide();
+    }
+
+    showAppShell() {
+      const loginView = document.getElementById('view-login');
+      const appShell = document.getElementById('app-shell');
+      if (loginView) loginView.classList.add('hidden');
+      if (appShell) appShell.classList.remove('hidden');
+      this.initLucide();
+    }
+
+    handleLogin(e) {
+      if (e) e.preventDefault();
+      const userEl = document.getElementById('login-username');
+      const passEl = document.getElementById('login-password');
+      const errEl = document.getElementById('login-error');
+      const errText = document.getElementById('login-error-text');
+
+      const user = userEl ? userEl.value.trim() : '';
+      const pass = passEl ? passEl.value.trim() : '';
+
+      // Normalize username: compare case-insensitively with AUTH_CONFIG.username
+      if (user.toUpperCase() === AUTH_CONFIG.username.toUpperCase() && pass === AUTH_CONFIG.password) {
+        localStorage.setItem(AUTH_CONFIG.storageKey, 'true');
+        this.isAuthenticated = true;
+        if (errEl) errEl.classList.add('hidden');
+        this.showAppShell();
+        this.init();
+      } else {
+        if (errEl) {
+          errEl.classList.remove('hidden');
+          if (errText) errText.textContent = 'Invalid username or password. Please try again.';
+        }
+        if (passEl) {
+          passEl.value = '';
+          passEl.focus();
+        }
+      }
+      this.initLucide();
+    }
+
+    logout() {
+      localStorage.removeItem(AUTH_CONFIG.storageKey);
+      this.isAuthenticated = false;
+      this.showLoginView();
+    }
+
+    togglePasswordVisibility() {
+      const passEl = document.getElementById('login-password');
+      const eyeIcon = document.getElementById('eye-icon');
+      if (!passEl) return;
+      if (passEl.type === 'password') {
+        passEl.type = 'text';
+        if (eyeIcon) eyeIcon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        passEl.type = 'password';
+        if (eyeIcon) eyeIcon.setAttribute('data-lucide', 'eye');
+      }
+      this.initLucide();
+    }
+
+    // -------------------------------------------------------------
+    // INITIALIZATION
+    // -------------------------------------------------------------
     init() {
       this.populateFilterDropdowns();
       this.renderAll();
@@ -665,7 +767,7 @@
 
       const html = `
         <div class="text-center pb-3 border-b border-dashed border-slate-300">
-          <h2 class="text-base font-extrabold text-mandi-800">GTCO AGRO COMMODITY TRADING CO.</h2>
+          <h2 class="text-base font-extrabold text-brand-800">GTCO AGRO COMMODITY TRADING CO.</h2>
           <p class="text-[11px] text-slate-500">APMC Commission Agent / Arhatiya - Shop No. 14</p>
           <div class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-800">
             Sauda Chitthi / APMC Commercial Sale Slip
@@ -697,7 +799,7 @@
               <td class="p-1.5 text-right font-bold">${sale.soldBags} Bags</td>
               <td class="p-1.5 text-right font-mono">${sale.soldBags * 50} kg</td>
               <td class="p-1.5 text-right">₹ ${sale.ratePerQtl}</td>
-              <td class="p-1.5 text-right font-mono font-bold text-mandi-700">₹ ${(sale.totalBuyerPayable || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              <td class="p-1.5 text-right font-mono font-bold text-brand-700">₹ ${(sale.totalBuyerPayable || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
             </tr>
             <tr class="bg-amber-50 text-amber-900">
               <td class="p-1.5 font-bold">Residual Loose Stock</td>
@@ -711,7 +813,7 @@
               <td class="p-1.5 text-right">${sale.soldBags} Bags + ${sale.residualLooseKg} kg</td>
               <td class="p-1.5 text-right font-mono">${totalKg} kg</td>
               <td class="p-1.5 text-right">Net Buyer</td>
-              <td class="p-1.5 text-right font-mono text-mandi-800 text-xs">₹ ${(sale.totalBuyerPayable || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              <td class="p-1.5 text-right font-mono text-brand-800 text-xs">₹ ${(sale.totalBuyerPayable || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
             </tr>
           </tbody>
         </table>
@@ -1036,7 +1138,7 @@
           <td class="py-2.5 px-4 text-slate-600">${this.escape(f.village || '--')}</td>
           <td class="py-2.5 px-4 text-slate-500 text-xs">${this.escape(f.notes || '--')}</td>
           <td class="py-2.5 px-4 text-right space-x-1">
-            <button onclick="app.editFarmer('${f.id}')" class="p-1 text-slate-600 hover:text-mandi-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
+            <button onclick="app.editFarmer('${f.id}')" class="p-1 text-slate-600 hover:text-brand-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
             <button onclick="app.deleteFarmer('${f.id}')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </td>
         </tr>
@@ -1057,7 +1159,7 @@
           <td class="py-2.5 px-4 text-center font-bold text-blue-700">${c.unitKg} kg</td>
           <td class="py-2.5 px-4 text-center"><span class="lot-badge">${c.prefix}</span></td>
           <td class="py-2.5 px-4 text-right space-x-1">
-            <button onclick="app.editCommodity('${c.id}')" class="p-1 text-slate-600 hover:text-mandi-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
+            <button onclick="app.editCommodity('${c.id}')" class="p-1 text-slate-600 hover:text-brand-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
             <button onclick="app.deleteCommodity('${c.id}')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </td>
         </tr>
@@ -1075,7 +1177,7 @@
           <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(l.name)}</td>
           <td class="py-2.5 px-4 text-slate-600 text-xs">${this.escape(l.desc || '--')}</td>
           <td class="py-2.5 px-4 text-right space-x-1">
-            <button onclick="app.editLocation('${l.id}')" class="p-1 text-slate-600 hover:text-mandi-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
+            <button onclick="app.editLocation('${l.id}')" class="p-1 text-slate-600 hover:text-brand-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
             <button onclick="app.deleteLocation('${l.id}')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </td>
         </tr>
@@ -1094,7 +1196,7 @@
           <td class="py-2.5 px-4 text-slate-600">${this.escape(b.contact || '--')}</td>
           <td class="py-2.5 px-4 text-slate-600 text-xs">${this.escape(b.license || '--')}</td>
           <td class="py-2.5 px-4 text-right space-x-1">
-            <button onclick="app.editBuyer('${b.id}')" class="p-1 text-slate-600 hover:text-mandi-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
+            <button onclick="app.editBuyer('${b.id}')" class="p-1 text-slate-600 hover:text-brand-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
             <button onclick="app.deleteBuyer('${b.id}')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </td>
         </tr>
@@ -1193,6 +1295,6 @@
   // Global instance
   window.app = new MandiApp();
   document.addEventListener('DOMContentLoaded', () => {
-    window.app.init();
+    window.app.checkAuth();
   });
 })();

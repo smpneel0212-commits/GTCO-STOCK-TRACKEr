@@ -22,7 +22,7 @@
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
-            mandi: {
+            brand: {
               50: '#f0fdf4',
               100: '#dcfce7',
               200: '#bbf7d0',
@@ -47,502 +47,596 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.0">
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-mandi-600 selection:text-white">
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-600 selection:text-white">
 
-  <!-- HEADER -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+  <!-- ========================================== -->
+  <!-- LOGIN & ACCESS LOCK SCREEN (PAISABHAI AUTH) -->
+  <!-- ========================================== -->
+  <div id="view-login" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 overflow-y-auto">
+    <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 space-y-6">
+      
+      <!-- Brand & Header -->
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-brand-700 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 font-extrabold text-xl">
+          🌾
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">GTCO Stock Tracker</h1>
+        <p class="text-xs text-slate-500 font-medium">APMC Commission Agent Ledger & Inventory</p>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="login-form" onsubmit="app.handleLogin(event)" class="space-y-4">
         
-        <!-- Brand & Title -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-mandi-800 to-mandi-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-mandi-700/20">
-            APMC
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">GTCO Stock Tracker</h1>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-mandi-100 text-mandi-800 border border-mandi-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-mandi-600 mr-1.5 animate-pulse"></span> Live Mandi
-              </span>
+        <!-- Error Banner -->
+        <div id="login-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600"></i>
+          <span id="login-error-text">Invalid username or password.</span>
+        </div>
+
+        <!-- Username Field -->
+        <div>
+          <label for="login-username" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Username
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="user" class="w-4 h-4"></i>
             </div>
-            <p class="text-xs text-slate-500 font-medium hidden sm:block">Commission Agent (Arhatiya) Ledger & 50kg Inventory Platform</p>
+            <input type="text" id="login-username" required placeholder="Enter username..." autocomplete="username"
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm font-semibold bg-slate-50 text-slate-900">
           </div>
         </div>
 
-        <!-- Desktop Navigation Tabs -->
-        <nav class="hidden md:flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
-          <button id="nav-btn-inward" onclick="app.navigate('inward')" class="nav-tab active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            <i data-lucide="package" class="w-4 h-4"></i>
-            <span>Inward Lots</span>
-            <span id="badge-inward-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
-          </button>
-          <button id="nav-btn-sales" onclick="app.navigate('sales')" class="nav-tab flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            <i data-lucide="scale" class="w-4 h-4"></i>
-            <span>Sales & Weighing</span>
-            <span id="badge-sales-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
-          </button>
-          <button id="nav-btn-loose" onclick="app.navigate('loose')" class="nav-tab flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            <i data-lucide="wheat" class="w-4 h-4"></i>
-            <span>Farmer Loose Stock</span>
-            <span id="badge-loose-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
-          </button>
-          <button id="nav-btn-master" onclick="app.navigate('master')" class="nav-tab flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            <i data-lucide="sliders" class="w-4 h-4"></i>
-            <span>Master Settings</span>
-          </button>
-        </nav>
-
-        <!-- Header Actions -->
-        <div class="flex items-center gap-2">
-          <!-- Excel Export -->
-          <button onclick="app.exportToExcel()" title="One-Click Export to Excel Workbook" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
-            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
-            <span>Export Excel</span>
-          </button>
-
-          <!-- New Inward Button -->
-          <button onclick="app.openNewInwardModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm transition">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            <span>New Inward</span>
-          </button>
+        <!-- Password Field -->
+        <div>
+          <label for="login-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Password
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="key" class="w-4 h-4"></i>
+            </div>
+            <input type="password" id="login-password" required placeholder="Enter password..." autocomplete="current-password"
+              class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm font-semibold bg-slate-50 text-slate-900 font-mono">
+            <button type="button" onclick="app.togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+              <i id="eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
 
+        <!-- Submit Button -->
+        <button type="submit"
+          class="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-brand-700 to-emerald-600 hover:from-brand-800 hover:to-emerald-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+          <i data-lucide="unlock" class="w-4 h-4"></i>
+          <span>Unlock APMC Ledger</span>
+        </button>
+
+      </form>
+
+      <!-- Security Note -->
+      <div class="pt-2 border-t border-slate-100 text-center">
+        <p class="text-[11px] text-slate-400 flex items-center justify-center gap-1.5 font-medium">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Authorized Access Only • Cross-Device Enabled</span>
+        </p>
       </div>
+
     </div>
+  </div>
 
-    <!-- Mobile Navigation Sub-bar -->
-    <div class="md:hidden border-t border-slate-200 bg-white grid grid-cols-4 p-1 text-center">
-      <button id="mob-nav-inward" onclick="app.navigate('inward')" class="mob-nav-tab active flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
-        <i data-lucide="package" class="w-4 h-4 mb-0.5"></i>
-        <span>Inward</span>
-      </button>
-      <button id="mob-nav-sales" onclick="app.navigate('sales')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
-        <i data-lucide="scale" class="w-4 h-4 mb-0.5"></i>
-        <span>Sales</span>
-      </button>
-      <button id="mob-nav-loose" onclick="app.navigate('loose')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
-        <i data-lucide="wheat" class="w-4 h-4 mb-0.5"></i>
-        <span>Loose</span>
-      </button>
-      <button id="mob-nav-master" onclick="app.navigate('master')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
-        <i data-lucide="sliders" class="w-4 h-4 mb-0.5"></i>
-        <span>Masters</span>
-      </button>
-    </div>
-  </header>
+  <!-- ========================================== -->
+  <!-- MAIN APP SHELL (HIDDEN UNTIL AUTHENTICATED) -->
+  <!-- ========================================== -->
+  <div id="app-shell" class="min-h-screen flex flex-col flex-1 hidden">
 
-  <!-- MAIN CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          
+          <!-- Brand & User Profile -->
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-800 to-brand-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-brand-700/20">
+              APMC
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">GTCO Stock Tracker</h1>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-100 text-brand-800 border border-brand-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-brand-600 mr-1.5 animate-pulse"></span> Live Mandi
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 font-medium hidden sm:block">Commission Agent Ledger & 50kg Inventory Platform</p>
+            </div>
 
-    <!-- REAL-TIME KPI SUMMARY BANNER (Filters adaptively) -->
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <!-- KPI 1 -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
-        <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200 flex-shrink-0">
-          <i data-lucide="box" class="w-5 h-5"></i>
-        </div>
-        <div class="min-w-0">
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Unweighed Stock</div>
-          <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            <span id="kpi-unweighed-bags">0</span> <span class="text-xs font-semibold text-slate-500">raw bags</span>
+            <!-- User Auth Badge & Lock Action -->
+            <div class="flex items-center gap-1 pl-2 sm:pl-3 border-l border-slate-200 ml-1">
+              <span class="hidden lg:flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                <i data-lucide="user-check" class="w-3.5 h-3.5 text-brand-700"></i>
+                <span>SHARNU PATIL</span>
+              </span>
+              <button onclick="app.logout()" title="Lock Ledger / Switch User" class="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition">
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-rose-600"></i>
+                <span class="hidden sm:inline">Lock</span>
+              </button>
+            </div>
           </div>
-          <div class="text-[11px] text-slate-400 truncate" id="kpi-unweighed-lots-sub">0 lots pending</div>
+
+          <!-- Desktop Navigation Tabs -->
+          <nav class="hidden md:flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+            <button id="nav-btn-inward" onclick="app.navigate('inward')" class="nav-tab active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
+              <i data-lucide="package" class="w-4 h-4"></i>
+              <span>Inward Lots</span>
+              <span id="badge-inward-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
+            </button>
+            <button id="nav-btn-sales" onclick="app.navigate('sales')" class="nav-tab flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
+              <i data-lucide="scale" class="w-4 h-4"></i>
+              <span>Sales & Weighing</span>
+              <span id="badge-sales-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
+            </button>
+            <button id="nav-btn-loose" onclick="app.navigate('loose')" class="nav-tab flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
+              <i data-lucide="wheat" class="w-4 h-4"></i>
+              <span>Farmer Loose Stock</span>
+              <span id="badge-loose-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
+            </button>
+            <button id="nav-btn-master" onclick="app.navigate('master')" class="nav-tab flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+              <span>Master Settings</span>
+            </button>
+          </nav>
+
+          <!-- Header Actions -->
+          <div class="flex items-center gap-2">
+            <!-- Excel Export -->
+            <button onclick="app.exportToExcel()" title="One-Click Export to Excel Workbook" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+              <span>Export Excel</span>
+            </button>
+
+            <!-- New Inward Button -->
+            <button onclick="app.openNewInwardModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm transition">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>New Inward</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
-      <!-- KPI 2 -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
-        <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200 flex-shrink-0">
-          <i data-lucide="check-circle" class="w-5 h-5"></i>
-        </div>
-        <div class="min-w-0">
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sold Whole Bags</div>
-          <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            <span id="kpi-sold-bags">0</span> <span class="text-xs font-semibold text-slate-500">bags (50kg)</span>
-          </div>
-          <div class="text-[11px] text-slate-400 truncate" id="kpi-sold-quintals-sub">0.00 Quintals</div>
-        </div>
-      </div>
-
-      <!-- KPI 3 -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
-        <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 flex-shrink-0">
-          <i data-lucide="wheat" class="w-5 h-5"></i>
-        </div>
-        <div class="min-w-0">
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Shop Loose Stock</div>
-          <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            <span id="kpi-loose-kg">0</span> <span class="text-xs font-semibold text-slate-500">kg</span>
-          </div>
-          <div class="text-[11px] text-slate-400 truncate" id="kpi-loose-farmers-sub">0 farmers with balance</div>
-        </div>
-      </div>
-
-      <!-- KPI 4 -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
-        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 flex-shrink-0">
-          <i data-lucide="receipt" class="w-5 h-5"></i>
-        </div>
-        <div class="min-w-0">
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Sales Bills</div>
-          <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            <span id="kpi-bills-count">0</span> <span class="text-xs font-semibold text-slate-500">bills</span>
-          </div>
-          <div class="text-[11px] text-slate-400 truncate">Strict 50kg billing</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- UNIVERSAL SEARCH & DYNAMIC FILTER BAR -->
-    <section class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
-      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        
-        <!-- Text Search -->
-        <div class="relative flex-1">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <i data-lucide="search" class="w-4 h-4"></i>
-          </div>
-          <input type="text" id="filter-search-text" oninput="app.handleFilterChange()" placeholder="Search by Farmer name, Commodity, Lot ID, Godown, Bill #..."
-            class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-mandi-500 focus:border-mandi-500 text-xs sm:text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
-        </div>
-
-        <!-- Filter Dropdowns -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0">
-          <!-- Filter by Farmer -->
-          <select id="filter-farmer" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-mandi-500">
-            <option value="">👤 All Farmers</option>
-          </select>
-
-          <!-- Filter by Commodity -->
-          <select id="filter-commodity" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-mandi-500">
-            <option value="">🌾 All Commodities</option>
-          </select>
-
-          <!-- Filter by Storage Location -->
-          <select id="filter-location" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-mandi-500">
-            <option value="">📍 All Locations</option>
-          </select>
-
-          <!-- Filter by Status -->
-          <select id="filter-status" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-mandi-500">
-            <option value="">🏷️ All Statuses</option>
-            <option value="Stored (Unweighed)">Stored (Unweighed)</option>
-            <option value="Weighed & Sold">Weighed & Sold</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Active Filter Pill Indicator -->
-      <div id="active-filter-indicator" class="hidden flex items-center justify-between text-xs pt-2 border-t border-slate-100 text-slate-600">
-        <div class="flex items-center gap-1.5">
-          <i data-lucide="filter" class="w-3.5 h-3.5 text-mandi-600"></i>
-          <span>Active filter applied: showing specific stocks & lots</span>
-        </div>
-        <button onclick="app.resetFilters()" class="text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline flex items-center gap-1">
-          <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear all filters
+      <!-- Mobile Navigation Sub-bar -->
+      <div class="md:hidden border-t border-slate-200 bg-white grid grid-cols-4 p-1 text-center">
+        <button id="mob-nav-inward" onclick="app.navigate('inward')" class="mob-nav-tab active flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
+          <i data-lucide="package" class="w-4 h-4 mb-0.5"></i>
+          <span>Inward</span>
+        </button>
+        <button id="mob-nav-sales" onclick="app.navigate('sales')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
+          <i data-lucide="scale" class="w-4 h-4 mb-0.5"></i>
+          <span>Sales</span>
+        </button>
+        <button id="mob-nav-loose" onclick="app.navigate('loose')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
+          <i data-lucide="wheat" class="w-4 h-4 mb-0.5"></i>
+          <span>Loose</span>
+        </button>
+        <button id="mob-nav-master" onclick="app.navigate('master')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[11px] font-bold text-slate-600">
+          <i data-lucide="sliders" class="w-4 h-4 mb-0.5"></i>
+          <span>Masters</span>
         </button>
       </div>
-    </section>
+    </header>
 
-    <!-- ========================================== -->
-    <!-- VIEW 1: INWARD LOTS GRID                   -->
-    <!-- ========================================== -->
-    <section id="view-inward" class="view-panel active space-y-4">
-      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        
-        <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base font-bold text-slate-900">Inward Farmer Produce Lots</h2>
-            <p class="text-xs text-slate-500">Raw unweighed bags deposited by farmers awaiting favorable market rate</p>
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+      <!-- REAL-TIME KPI SUMMARY BANNER (Filters adaptively) -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <!-- KPI 1 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200 flex-shrink-0">
+            <i data-lucide="box" class="w-5 h-5"></i>
           </div>
-          <button onclick="app.openNewInwardModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold transition">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>Record New Arrival</span>
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Unweighed Stock</div>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              <span id="kpi-unweighed-bags">0</span> <span class="text-xs font-semibold text-slate-500">raw bags</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate" id="kpi-unweighed-lots-sub">0 lots pending</div>
+          </div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200 flex-shrink-0">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sold Whole Bags</div>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              <span id="kpi-sold-bags">0</span> <span class="text-xs font-semibold text-slate-500">bags (50kg)</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate" id="kpi-sold-quintals-sub">0.00 Quintals</div>
+          </div>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 flex-shrink-0">
+            <i data-lucide="wheat" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Shop Loose Stock</div>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              <span id="kpi-loose-kg">0</span> <span class="text-xs font-semibold text-slate-500">kg</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate" id="kpi-loose-farmers-sub">0 farmers with balance</div>
+          </div>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 flex-shrink-0">
+            <i data-lucide="receipt" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Sales Bills</div>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              <span id="kpi-bills-count">0</span> <span class="text-xs font-semibold text-slate-500">bills</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate">Strict 50kg billing</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- UNIVERSAL SEARCH & DYNAMIC FILTER BAR -->
+      <section class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          
+          <!-- Text Search -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </div>
+            <input type="text" id="filter-search-text" oninput="app.handleFilterChange()" placeholder="Search by Farmer name, Commodity, Lot ID, Godown, Bill #..."
+              class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-xs sm:text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
+          </div>
+
+          <!-- Filter Dropdowns -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0">
+            <!-- Filter by Farmer -->
+            <select id="filter-farmer" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-brand-500">
+              <option value="">👤 All Farmers</option>
+            </select>
+
+            <!-- Filter by Commodity -->
+            <select id="filter-commodity" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-brand-500">
+              <option value="">🌾 All Commodities</option>
+            </select>
+
+            <!-- Filter by Storage Location -->
+            <select id="filter-location" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-brand-500">
+              <option value="">📍 All Locations</option>
+            </select>
+
+            <!-- Filter by Status -->
+            <select id="filter-status" onchange="app.handleFilterChange()" class="py-2 px-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white text-slate-700 focus:ring-2 focus:ring-brand-500">
+              <option value="">🏷️ All Statuses</option>
+              <option value="Stored (Unweighed)">Stored (Unweighed)</option>
+              <option value="Weighed & Sold">Weighed & Sold</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Active Filter Pill Indicator -->
+        <div id="active-filter-indicator" class="hidden flex items-center justify-between text-xs pt-2 border-t border-slate-100 text-slate-600">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="filter" class="w-3.5 h-3.5 text-brand-700"></i>
+            <span>Active filter applied: showing isolated stock & transactions</span>
+          </div>
+          <button onclick="app.resetFilters()" class="text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline flex items-center gap-1">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear all filters
+          </button>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: INWARD LOTS GRID                   -->
+      <!-- ========================================== -->
+      <section id="view-inward" class="view-panel active space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Inward Farmer Produce Lots</h2>
+              <p class="text-xs text-slate-500">Raw unweighed bags deposited by farmers awaiting favorable market rate</p>
+            </div>
+            <button onclick="app.openNewInwardModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Record New Arrival</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-4">Lot ID</th>
+                  <th class="py-3 px-4">Arrival Date</th>
+                  <th class="py-3 px-4">Farmer Name</th>
+                  <th class="py-3 px-4">Commodity</th>
+                  <th class="py-3 px-4 text-center">Unweighed Bags</th>
+                  <th class="py-3 px-4">Godown Location</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="inward-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: SALES & WEIGHING AUDIT LEDGER      -->
+      <!-- ========================================== -->
+      <section id="view-sales" class="view-panel space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">APMC Commercial Sale Ledger</h2>
+              <p class="text-xs text-slate-500">Transactions split strictly into whole 50kg standard bags and residual loose weight</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-4">Bill Number</th>
+                  <th class="py-3 px-4">Date & Time</th>
+                  <th class="py-3 px-4">Buyer / Trader</th>
+                  <th class="py-3 px-4">Lot ID</th>
+                  <th class="py-3 px-4">Commodity</th>
+                  <th class="py-3 px-4">Sold Bags (50kg)</th>
+                  <th class="py-3 px-4">Residual Loose</th>
+                  <th class="py-3 px-4">Farmer Credited</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sales-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: FARMER LOOSE STOCK LEDGER          -->
+      <!-- ========================================== -->
+      <section id="view-loose" class="view-panel space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          
+          <!-- Cumulative Balances Card -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-100">
+              <h2 class="text-base font-bold text-slate-900">Cumulative Loose Stock by Farmer</h2>
+              <p class="text-xs text-slate-500">Unbagged residual kg (0–49 kg) credited to farmers and retained in shop inventory</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    <th class="py-3 px-4">Farmer Name</th>
+                    <th class="py-3 px-4">Commodity</th>
+                    <th class="py-3 px-4 text-right">Total Loose</th>
+                    <th class="py-3 px-4 text-right">Equiv. 50kg Bags</th>
+                    <th class="py-3 px-4 text-right">Remainder</th>
+                  </tr>
+                </thead>
+                <tbody id="loose-summary-body" class="divide-y divide-slate-100">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Activity History Card -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-100">
+              <h2 class="text-base font-bold text-slate-900">Loose Stock Inward Audit Trail</h2>
+              <p class="text-xs text-slate-500">Recent scale settlements depositing loose stock into shop ledger</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    <th class="py-3 px-4">Bill Ref</th>
+                    <th class="py-3 px-4">Farmer</th>
+                    <th class="py-3 px-4">Lot ID</th>
+                    <th class="py-3 px-4 text-right">Loose Added</th>
+                    <th class="py-3 px-4">Shop Inventory Status</th>
+                  </tr>
+                </thead>
+                <tbody id="loose-audit-body" class="divide-y divide-slate-100">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 4: MASTER SETTINGS (LIKE PAISABHAI)   -->
+      <!-- ========================================== -->
+      <section id="view-master" class="view-panel space-y-5">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">APMC Master Configuration</h2>
+            <p class="text-xs text-slate-500">Define your own Farmers, Commodities, Godown Locations, and Buyers</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="app.populateDefaultAPMCCommodities()" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span>Load Standard Commodities</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Master Sub-Tabs Nav -->
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <button id="master-tab-farmers" onclick="app.switchMasterTab('farmers')" class="master-subtab active px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Farmers Directory</span>
+            <span id="badge-master-farmers" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
+          </button>
+          <button id="master-tab-commodities" onclick="app.switchMasterTab('commodities')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="wheat" class="w-4 h-4"></i>
+            <span>Commodities Master</span>
+            <span id="badge-master-commodities" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
+          </button>
+          <button id="master-tab-locations" onclick="app.switchMasterTab('locations')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-4 h-4"></i>
+            <span>Storage Locations</span>
+            <span id="badge-master-locations" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
+          </button>
+          <button id="master-tab-buyers" onclick="app.switchMasterTab('buyers')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="briefcase" class="w-4 h-4"></i>
+            <span>Buyers Directory</span>
+            <span id="badge-master-buyers" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
           </button>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th class="py-3 px-4">Lot ID</th>
-                <th class="py-3 px-4">Arrival Date</th>
-                <th class="py-3 px-4">Farmer Name</th>
-                <th class="py-3 px-4">Commodity</th>
-                <th class="py-3 px-4 text-center">Unweighed Bags</th>
-                <th class="py-3 px-4">Godown Location</th>
-                <th class="py-3 px-4 text-center">Status</th>
-                <th class="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="inward-table-body" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- VIEW 2: SALES & WEIGHING AUDIT LEDGER      -->
-    <!-- ========================================== -->
-    <section id="view-sales" class="view-panel space-y-4">
-      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        
-        <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-base font-bold text-slate-900">APMC Commercial Sale Ledger</h2>
-            <p class="text-xs text-slate-500">Transactions split strictly into whole 50kg standard bags and residual loose weight</p>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th class="py-3 px-4">Bill Number</th>
-                <th class="py-3 px-4">Date & Time</th>
-                <th class="py-3 px-4">Buyer / Trader</th>
-                <th class="py-3 px-4">Lot ID</th>
-                <th class="py-3 px-4">Commodity</th>
-                <th class="py-3 px-4">Sold Bags (50kg)</th>
-                <th class="py-3 px-4">Residual Loose</th>
-                <th class="py-3 px-4">Farmer Credited</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="sales-table-body" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- VIEW 3: FARMER LOOSE STOCK LEDGER          -->
-    <!-- ========================================== -->
-    <section id="view-loose" class="view-panel space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        
-        <!-- Cumulative Balances Card -->
-        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-          <div class="p-4 sm:p-5 border-b border-slate-100">
-            <h2 class="text-base font-bold text-slate-900">Cumulative Loose Stock by Farmer</h2>
-            <p class="text-xs text-slate-500">Unbagged residual kg (0–49 kg) credited to farmers and retained in shop inventory</p>
+        <!-- MASTER PANEL 1: FARMERS -->
+        <div id="master-panel-farmers" class="master-panel active bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Farmers Master Directory</h3>
+              <p class="text-xs text-slate-500">Farmers depositing produce at your APMC shop</p>
+            </div>
+            <button onclick="app.openFarmerModal()" class="px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span>Add Farmer</span>
+            </button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
                   <th class="py-3 px-4">Farmer Name</th>
-                  <th class="py-3 px-4">Commodity</th>
-                  <th class="py-3 px-4 text-right">Total Loose</th>
-                  <th class="py-3 px-4 text-right">Equiv. 50kg Bags</th>
-                  <th class="py-3 px-4 text-right">Remainder</th>
+                  <th class="py-3 px-4">Mobile / Contact</th>
+                  <th class="py-3 px-4">Village / Address</th>
+                  <th class="py-3 px-4">Notes</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody id="loose-summary-body" class="divide-y divide-slate-100">
+              <tbody id="master-farmers-table-body" class="divide-y divide-slate-100">
                 <!-- Dynamically populated -->
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Activity History Card -->
-        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-          <div class="p-4 sm:p-5 border-b border-slate-100">
-            <h2 class="text-base font-bold text-slate-900">Loose Stock Inward Audit Trail</h2>
-            <p class="text-xs text-slate-500">Recent scale settlements depositing loose stock into shop ledger</p>
+        <!-- MASTER PANEL 2: COMMODITIES -->
+        <div id="master-panel-commodities" class="master-panel hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Commodity Master Configuration</h3>
+              <p class="text-xs text-slate-500">Commodity names, standard bag unit (kg), and dynamic lot sequence prefix</p>
+            </div>
+            <button onclick="app.openCommodityModal()" class="px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Add Commodity</span>
+            </button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                  <th class="py-3 px-4">Bill Ref</th>
-                  <th class="py-3 px-4">Farmer</th>
-                  <th class="py-3 px-4">Lot ID</th>
-                  <th class="py-3 px-4 text-right">Loose Added</th>
-                  <th class="py-3 px-4">Shop Inventory Status</th>
+                  <th class="py-3 px-4">Code</th>
+                  <th class="py-3 px-4">Common Name</th>
+                  <th class="py-3 px-4">Local / Regional Name</th>
+                  <th class="py-3 px-4 text-center">Standard Bag Unit</th>
+                  <th class="py-3 px-4 text-center">Lot Prefix</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody id="loose-audit-body" class="divide-y divide-slate-100">
+              <tbody id="master-commodities-table-body" class="divide-y divide-slate-100">
                 <!-- Dynamically populated -->
               </tbody>
             </table>
           </div>
         </div>
 
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- VIEW 4: MASTER SETTINGS (LIKE PAISABHAI)   -->
-    <!-- ========================================== -->
-    <section id="view-master" class="view-panel space-y-5">
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">APMC Master Configuration</h2>
-          <p class="text-xs text-slate-500">Define your own Farmers, Commodities, Godown Locations, and Buyers</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="app.populateDefaultAPMCCommodities()" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
-            <span>Load Standard Commodities</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Master Sub-Tabs Nav -->
-      <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button id="master-tab-farmers" onclick="app.switchMasterTab('farmers')" class="master-subtab active px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-          <i data-lucide="users" class="w-4 h-4"></i>
-          <span>Farmers Directory</span>
-          <span id="badge-master-farmers" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
-        </button>
-        <button id="master-tab-commodities" onclick="app.switchMasterTab('commodities')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-          <i data-lucide="wheat" class="w-4 h-4"></i>
-          <span>Commodities Master</span>
-          <span id="badge-master-commodities" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
-        </button>
-        <button id="master-tab-locations" onclick="app.switchMasterTab('locations')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-          <i data-lucide="map-pin" class="w-4 h-4"></i>
-          <span>Storage Locations</span>
-          <span id="badge-master-locations" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
-        </button>
-        <button id="master-tab-buyers" onclick="app.switchMasterTab('buyers')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-          <i data-lucide="briefcase" class="w-4 h-4"></i>
-          <span>Buyers Directory</span>
-          <span id="badge-master-buyers" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
-        </button>
-      </div>
-
-      <!-- MASTER PANEL 1: FARMERS -->
-      <div id="master-panel-farmers" class="master-panel active bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Farmers Master Directory</h3>
-            <p class="text-xs text-slate-500">Farmers depositing produce at your APMC shop</p>
+        <!-- MASTER PANEL 3: STORAGE LOCATIONS -->
+        <div id="master-panel-locations" class="master-panel hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Storage Locations Master</h3>
+              <p class="text-xs text-slate-500">Godowns, floor bins, sheds, and bays in your APMC shop</p>
+            </div>
+            <button onclick="app.openLocationModal()" class="px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Add Location</span>
+            </button>
           </div>
-          <button onclick="app.openFarmerModal()" class="px-3 py-1.5 rounded-lg bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold transition flex items-center gap-1">
-            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-            <span>Add Farmer</span>
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th class="py-3 px-4">Farmer Name</th>
-                <th class="py-3 px-4">Mobile / Contact</th>
-                <th class="py-3 px-4">Village / Address</th>
-                <th class="py-3 px-4">Notes</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="master-farmers-table-body" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- MASTER PANEL 2: COMMODITIES -->
-      <div id="master-panel-commodities" class="master-panel hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Commodity Master Configuration</h3>
-            <p class="text-xs text-slate-500">Commodity names, standard bag unit (kg), and dynamic lot sequence prefix</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-4">Location Name</th>
+                  <th class="py-3 px-4">Description / Bin Info</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="master-locations-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
           </div>
-          <button onclick="app.openCommodityModal()" class="px-3 py-1.5 rounded-lg bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold transition flex items-center gap-1">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Add Commodity</span>
-          </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th class="py-3 px-4">Code</th>
-                <th class="py-3 px-4">Common Name</th>
-                <th class="py-3 px-4">Local / Regional Name</th>
-                <th class="py-3 px-4 text-center">Standard Bag Unit</th>
-                <th class="py-3 px-4 text-center">Lot Prefix</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="master-commodities-table-body" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <!-- MASTER PANEL 3: STORAGE LOCATIONS -->
-      <div id="master-panel-locations" class="master-panel hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Storage Locations Master</h3>
-            <p class="text-xs text-slate-500">Godowns, floor bins, sheds, and bays in your APMC shop</p>
+        <!-- MASTER PANEL 4: BUYERS -->
+        <div id="master-panel-buyers" class="master-panel hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Buyers / Traders Directory</h3>
+              <p class="text-xs text-slate-500">Purchasing traders and grain companies</p>
+            </div>
+            <button onclick="app.openBuyerModal()" class="px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Add Buyer</span>
+            </button>
           </div>
-          <button onclick="app.openLocationModal()" class="px-3 py-1.5 rounded-lg bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold transition flex items-center gap-1">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Add Location</span>
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th class="py-3 px-4">Location Name</th>
-                <th class="py-3 px-4">Description / Bin Info</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="master-locations-table-body" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- MASTER PANEL 4: BUYERS -->
-      <div id="master-panel-buyers" class="master-panel hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Buyers / Traders Directory</h3>
-            <p class="text-xs text-slate-500">Purchasing traders and grain companies</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-4">Buyer / Trader Name</th>
+                  <th class="py-3 px-4">Contact Person</th>
+                  <th class="py-3 px-4">Phone / License</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="master-buyers-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
           </div>
-          <button onclick="app.openBuyerModal()" class="px-3 py-1.5 rounded-lg bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold transition flex items-center gap-1">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Add Buyer</span>
-          </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th class="py-3 px-4">Buyer / Trader Name</th>
-                <th class="py-3 px-4">Contact Person</th>
-                <th class="py-3 px-4">Phone / License</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="master-buyers-table-body" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-    </section>
+      </section>
 
-  </main>
+    </main>
+
+  </div>
 
   <!-- ========================================== -->
   <!-- MODAL: RECORD INWARD ENTRY                 -->
@@ -567,7 +661,7 @@
             <label for="inward-farmer" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
               Farmer *
             </label>
-            <button type="button" onclick="app.openFarmerModal(true)" class="text-[11px] text-mandi-700 hover:text-mandi-800 font-bold flex items-center gap-1 hover:underline">
+            <button type="button" onclick="app.openFarmerModal(true)" class="text-[11px] text-brand-700 hover:text-brand-800 font-bold flex items-center gap-1 hover:underline">
               <i data-lucide="plus-circle" class="w-3 h-3"></i> + Add New Farmer
             </button>
           </div>
@@ -583,7 +677,7 @@
               <label for="inward-commodity" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Commodity *
               </label>
-              <button type="button" onclick="app.openCommodityModal(true)" class="text-[11px] text-mandi-700 hover:text-mandi-800 font-bold flex items-center gap-1 hover:underline">
+              <button type="button" onclick="app.openCommodityModal(true)" class="text-[11px] text-brand-700 hover:text-brand-800 font-bold flex items-center gap-1 hover:underline">
                 <i data-lucide="plus-circle" class="w-3 h-3"></i> + Add
               </button>
             </div>
@@ -623,7 +717,7 @@
             <label for="inward-location" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
               Storage Location *
             </label>
-            <button type="button" onclick="app.openLocationModal(true)" class="text-[11px] text-mandi-700 hover:text-mandi-800 font-bold flex items-center gap-1 hover:underline">
+            <button type="button" onclick="app.openLocationModal(true)" class="text-[11px] text-brand-700 hover:text-brand-800 font-bold flex items-center gap-1 hover:underline">
               <i data-lucide="plus-circle" class="w-3 h-3"></i> + Add Location
             </button>
           </div>
@@ -634,7 +728,7 @@
 
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button type="button" onclick="app.closeModal('modal-inward')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm">Save Inward Entry</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm">Save Inward Entry</button>
         </div>
 
       </form>
@@ -724,7 +818,7 @@
                 <label for="sale-buyer" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                   Buyer / Trader *
                 </label>
-                <button type="button" onclick="app.openBuyerModal(true)" class="text-[11px] text-mandi-700 hover:text-mandi-800 font-bold flex items-center gap-1 hover:underline">
+                <button type="button" onclick="app.openBuyerModal(true)" class="text-[11px] text-brand-700 hover:text-brand-800 font-bold flex items-center gap-1 hover:underline">
                   <i data-lucide="plus-circle" class="w-3 h-3"></i> + Add Buyer
                 </button>
               </div>
@@ -772,7 +866,7 @@
 
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button type="button" onclick="app.closeModal('modal-sale')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm">Confirm Sale & Print Slip</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm">Confirm Sale & Print Slip</button>
         </div>
 
       </form>
@@ -797,7 +891,7 @@
 
       <div class="pt-2 flex items-center justify-end gap-2">
         <button type="button" onclick="app.closeModal('modal-invoice')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Close</button>
-        <button type="button" onclick="window.print()" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+        <button type="button" onclick="window.print()" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
           <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Slip
         </button>
       </div>
@@ -833,7 +927,7 @@
         </div>
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button type="button" onclick="app.closeModal('modal-farmer')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm">Save Farmer</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm">Save Farmer</button>
         </div>
       </form>
     </div>
@@ -874,7 +968,7 @@
         </div>
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button type="button" onclick="app.closeModal('modal-commodity')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm">Save Commodity</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm">Save Commodity</button>
         </div>
       </form>
     </div>
@@ -901,7 +995,7 @@
         </div>
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button type="button" onclick="app.closeModal('modal-location')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm">Save Location</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm">Save Location</button>
         </div>
       </form>
     </div>
@@ -932,12 +1026,12 @@
         </div>
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button type="button" onclick="app.closeModal('modal-buyer')" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-mandi-700 hover:bg-mandi-800 text-white text-xs font-bold shadow-sm">Save Buyer</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-sm">Save Buyer</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=2.0"></script>
 </body>
 </html>
