@@ -2,8 +2,7 @@
  * GTCO Stock Tracker - APMC Agent Ledger & Inventory Platform
  * Master-driven architecture inspired by Paisabhai.
  * Protected with Paisabhai Cross-Device Access Lock (SHARNU PATIL / 02161301).
- * Zero hardcoded demo transactions. User-defined Farmers, Commodities, Locations & Buyers.
- * Real-time dynamic multi-criteria search & isolation by Farmer, Commodity, or Location.
+ * Full Inward & Outward Stock Tracking with Gate Passes & 50kg Weighing Split Engine.
  */
 
 (function () {
@@ -48,7 +47,9 @@
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          if (!parsed.outwardDispatches) parsed.outwardDispatches = [];
+          return parsed;
         } catch (e) {
           console.error('Failed to parse storage, creating fresh state', e);
         }
@@ -56,6 +57,7 @@
       return {
         schemaVersion: 2,
         inwardLots: [],
+        outwardDispatches: [],
         sales: [],
         masters: {
           farmers: [],
@@ -510,7 +512,7 @@
     }
 
     // -------------------------------------------------------------
-    // LOT ID GENERATOR
+    // LOT ID & GATE PASS NUMBER GENERATOR
     // -------------------------------------------------------------
     getNextLotId(commodityId) {
       const comm = this.state.masters.commodities.find(c => c.id === commodityId);
@@ -536,6 +538,33 @@
         }
       });
       return `BILL-${year}-${(maxSeq + 1).toString().padStart(4, '0')}`;
+    }
+
+    getNextGatePassNumber() {
+      const year = new Date().getFullYear();
+      let maxSeq = 0;
+      (this.state.outwardDispatches || []).forEach(o => {
+        const match = o.gatePassNo && o.gatePassNo.match(/OUT-\d+-(\d+)/);
+        if (match) {
+          const seq = parseInt(match[1], 10);
+          if (seq > maxSeq) maxSeq = seq;
+        }
+      });
+      return `OUT-${year}-${(maxSeq + 1).toString().padStart(4, '0')}`;
+    }
+
+    // Stock availability per lot
+    getLotOutwardBags(lotId) {
+      return (this.state.outwardDispatches || [])
+        .filter(o => o.lotId === lotId)
+        .reduce((sum, o) => sum + (parseInt(o.bags, 10) || 0), 0);
+    }
+
+    getLotAvailableBags(lotId) {
+      const lot = this.state.inwardLots.find(l => l.lotId === lotId);
+      if (!lot) return 0;
+      const outwardBags = this.getLotOutwardBags(lotId);
+      return Math.max(0, lot.unweighedBags - outwardBags);
     }
 
     // -------------------------------------------------------------
@@ -642,6 +671,164 @@
       document.getElementById('form-inward').reset();
       this.renderAll();
       this.navigate('inward');
+    }
+
+    // -------------------------------------------------------------
+    // OUTWARD STOCK DISPATCH WORKFLOW (NEW!)
+    // -------------------------------------------------------------
+    openNewOutwardModal(preselectedLotId = '') {
+      const select = document.getElementById('outward-lot-id');
+      const lotsWithStock = this.state.inwardLots.filter(l => this.getLotAvailableBags(l.lotId) > 0);
+
+      if (lotsWithStock.length === 0) {
+        alert('No stock available in godown to dispatch. Record an Inward arrival first.');
+        return;
+      }
+
+      select.innerHTML = `<option value="" disabled ${!preselectedLotId ? 'selected' : ''}>-- Select Available Lot --</option>` +
+        lotsWithStock.map(l => {
+          const farmer = this.state.masters.farmers.find(f => f.id === l.farmerId) || { name: 'Unknown' };
+          const comm = this.state.masters.commodities.find(c => c.id === l.commodityId) || { name: 'Unknown' };
+          const avail = this.getLotAvailableBags(l.lotId);
+          return `<option value="${l.lotId}" ${l.lotId === preselectedLotId ? 'selected' : ''}>Lot ${l.lotId} - ${farmer.name} (${comm.name}) - ${avail} Bags Available</option>`;
+        }).join('');
+
+      document.getElementById('outward-gatepass').value = this.getNextGatePassNumber();
+      
+      const dtInput = document.getElementById('outward-datetime');
+      if (dtInput) {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        dtInput.value = (new Date(now - offset)).toISOString().slice(0, 16);
+      }
+
+      document.getElementById('outward-bags').value = '';
+      document.getElementById('outward-receiver').value = '';
+      document.getElementById('outward-vehicle').value = '';
+      document.getElementById('outward-notes').value = '';
+
+      this.handleOutwardLotSelect();
+      this.openModal('modal-outward');
+    }
+
+    handleOutwardLotSelect() {
+      const lotId = document.getElementById('outward-lot-id').value;
+      const lot = this.state.inwardLots.find(l => l.lotId === lotId);
+      const infoBox = document.getElementById('outward-lot-info-box');
+
+      if (!lot) {
+        if (infoBox) infoBox.classList.add('hidden');
+        return;
+      }
+
+      const farmer = this.state.masters.farmers.find(f => f.id === lot.farmerId) || { name: 'Unknown' };
+      const comm = this.state.masters.commodities.find(c => c.id === lot.commodityId) || { name: 'Unknown' };
+      const avail = this.getLotAvailableBags(lot.lotId);
+
+      document.getElementById('outward-info-farmer').textContent = farmer.name;
+      document.getElementById('outward-info-commodity').textContent = comm.name;
+      document.getElementById('outward-info-available').textContent = `${avail} Bags`;
+
+      const bagsInput = document.getElementById('outward-bags');
+      bagsInput.max = avail;
+      bagsInput.placeholder = `Max ${avail} bags`;
+
+      if (infoBox) infoBox.classList.remove('hidden');
+    }
+
+    handleOutwardSubmit(e) {
+      e.preventDefault();
+      const lotId = document.getElementById('outward-lot-id').value;
+      const lot = this.state.inwardLots.find(l => l.lotId === lotId);
+      if (!lot) return;
+
+      const avail = this.getLotAvailableBags(lotId);
+      const bags = parseInt(document.getElementById('outward-bags').value, 10);
+
+      if (isNaN(bags) || bags <= 0) {
+        alert('Please enter a valid number of outward bags.');
+        return;
+      }
+
+      if (bags > avail) {
+        alert(`Cannot dispatch ${bags} bags. Only ${avail} bags available in Lot ${lotId}.`);
+        return;
+      }
+
+      const gatePassNo = document.getElementById('outward-gatepass').value.trim();
+      const dateTime = document.getElementById('outward-datetime').value;
+      const type = document.getElementById('outward-type').value;
+      const receiver = document.getElementById('outward-receiver').value.trim();
+      const vehicleNo = document.getElementById('outward-vehicle').value.trim();
+      const notes = document.getElementById('outward-notes').value.trim();
+
+      const outwardRecord = {
+        id: `out_${Date.now()}`,
+        gatePassNo,
+        dateTime,
+        lotId,
+        farmerId: lot.farmerId,
+        commodityId: lot.commodityId,
+        bags,
+        type,
+        receiver,
+        vehicleNo,
+        notes
+      };
+
+      if (!this.state.outwardDispatches) this.state.outwardDispatches = [];
+      this.state.outwardDispatches.unshift(outwardRecord);
+
+      this.saveState();
+      this.closeModal('modal-outward');
+      this.renderAll();
+      this.showOutwardSlip(outwardRecord);
+    }
+
+    showOutwardSlip(outward) {
+      const farmer = this.state.masters.farmers.find(f => f.id === outward.farmerId) || { name: 'Unknown' };
+      const comm = this.state.masters.commodities.find(c => c.id === outward.commodityId) || { name: 'Unknown' };
+
+      const html = `
+        <div class="text-center pb-3 border-b border-dashed border-slate-300">
+          <h2 class="text-base font-extrabold text-amber-800">GTCO AGRO COMMODITY GODOWN</h2>
+          <p class="text-[11px] text-slate-500">APMC Market Yard - Main Gate Store & Godown</p>
+          <div class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            Official Outward Gate Pass / Delivery Challan
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div><strong class="text-slate-500">Gate Pass #:</strong> <span class="font-mono font-bold text-amber-800">${outward.gatePassNo}</span></div>
+          <div class="text-right"><strong class="text-slate-500">Date:</strong> ${this.formatDateTime(outward.dateTime)}</div>
+          <div><strong class="text-slate-500">Source Lot ID:</strong> <span class="lot-badge">${outward.lotId}</span></div>
+          <div class="text-right"><strong class="text-slate-500">Dispatch Purpose:</strong> <span class="font-bold">${outward.type}</span></div>
+          <div><strong class="text-slate-500">Farmer:</strong> <span class="font-bold">${this.escape(farmer.name)}</span></div>
+          <div class="text-right"><strong class="text-slate-500">Commodity:</strong> ${this.escape(comm.name)}</div>
+          <div><strong class="text-slate-500">Dispatched To:</strong> <span class="font-bold text-slate-900">${this.escape(outward.receiver)}</span></div>
+          <div class="text-right"><strong class="text-slate-500">Vehicle / Truck #:</strong> <span class="font-mono font-bold uppercase">${this.escape(outward.vehicleNo)}</span></div>
+        </div>
+
+        <div class="my-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+          <div class="text-[11px] font-bold text-amber-900 uppercase">Total Produce Dispatched</div>
+          <div class="text-2xl font-extrabold text-amber-950 font-mono my-0.5">${outward.bags} Bags</div>
+          <div class="text-[11px] text-slate-600 font-semibold">${comm.name} • 50 kg Standard Mandi Packing</div>
+        </div>
+
+        ${outward.notes ? `<div class="p-2 rounded-lg bg-slate-100 text-[11px] text-slate-600"><strong>Driver/Notes:</strong> ${this.escape(outward.notes)}</div>` : ''}
+
+        <div class="pt-6 grid grid-cols-2 text-center text-[10px] text-slate-500">
+          <div>
+            <div class="border-t border-slate-300 w-32 mx-auto pt-1 font-bold">Godown Clerk / In-Charge</div>
+          </div>
+          <div>
+            <div class="border-t border-slate-300 w-32 mx-auto pt-1 font-bold">Driver / Receiver Signature</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('outward-slip-print-area').innerHTML = html;
+      this.openModal('modal-outward-slip');
     }
 
     // -------------------------------------------------------------
@@ -861,36 +1048,41 @@
       this.handleFilterChange();
     }
 
-    matchesFilter(lotOrSale, type) {
+    matchesFilter(item, type) {
       const f = this.filters;
-      const farmerId = lotOrSale.farmerId;
-      const commodityId = lotOrSale.commodityId;
+      const farmerId = item.farmerId;
+      const commodityId = item.commodityId;
 
       if (f.farmerId && farmerId !== f.farmerId) return false;
       if (f.commodityId && commodityId !== f.commodityId) return false;
 
       if (type === 'lot') {
-        if (f.locationId && lotOrSale.locationId !== f.locationId) return false;
-        if (f.status && lotOrSale.status !== f.status) return false;
+        if (f.locationId && item.locationId !== f.locationId) return false;
+        if (f.status && item.status !== f.status) return false;
       }
 
       if (f.text) {
-        const farmer = this.state.masters.farmers.find(item => item.id === farmerId);
-        const comm = this.state.masters.commodities.find(item => item.id === commodityId);
+        const farmer = this.state.masters.farmers.find(it => it.id === farmerId);
+        const comm = this.state.masters.commodities.find(it => it.id === commodityId);
         const farmerName = farmer ? farmer.name.toLowerCase() : '';
         const commName = comm ? `${comm.name} ${comm.localName || ''} ${comm.code}`.toLowerCase() : '';
-        const lotId = (lotOrSale.lotId || '').toLowerCase();
+        const lotId = (item.lotId || '').toLowerCase();
 
         let extraMatch = false;
         if (type === 'lot') {
-          const loc = this.state.masters.locations.find(item => item.id === lotOrSale.locationId);
+          const loc = this.state.masters.locations.find(it => it.id === item.locationId);
           const locName = loc ? loc.name.toLowerCase() : '';
           extraMatch = locName.includes(f.text);
         } else if (type === 'sale') {
-          const buyer = this.state.masters.buyers.find(item => item.id === lotOrSale.buyerId);
+          const buyer = this.state.masters.buyers.find(it => it.id === item.buyerId);
           const buyerName = buyer ? buyer.name.toLowerCase() : '';
-          const billNo = (lotOrSale.billNumber || '').toLowerCase();
+          const billNo = (item.billNumber || '').toLowerCase();
           extraMatch = buyerName.includes(f.text) || billNo.includes(f.text);
+        } else if (type === 'outward') {
+          const gatePass = (item.gatePassNo || '').toLowerCase();
+          const vehicle = (item.vehicleNo || '').toLowerCase();
+          const receiver = (item.receiver || '').toLowerCase();
+          extraMatch = gatePass.includes(f.text) || vehicle.includes(f.text) || receiver.includes(f.text);
         }
 
         const matches = farmerName.includes(f.text) || commName.includes(f.text) || lotId.includes(f.text) || extraMatch;
@@ -906,6 +1098,7 @@
     renderAll() {
       this.renderKPIs();
       this.renderInwardTable();
+      this.renderOutwardTable();
       this.renderSalesTable();
       this.renderLooseStockLedger();
       this.renderMasterFarmers();
@@ -917,40 +1110,45 @@
 
     renderKPIs() {
       const filteredLots = this.state.inwardLots.filter(l => this.matchesFilter(l, 'lot'));
+      const filteredOutwards = (this.state.outwardDispatches || []).filter(o => this.matchesFilter(o, 'outward'));
       const filteredSales = this.state.sales.filter(s => this.matchesFilter(s, 'sale'));
 
-      let unweighedBags = 0;
-      let unweighedLots = 0;
+      // Inward total
+      let totalInwardBags = 0;
       filteredLots.forEach(l => {
-        if (l.status === 'Stored (Unweighed)') {
-          unweighedBags += l.unweighedBags;
-          unweighedLots++;
-        }
+        totalInwardBags += l.unweighedBags;
       });
 
-      let soldBags = 0;
+      // Outward total
+      let totalOutwardBags = 0;
+      filteredOutwards.forEach(o => {
+        totalOutwardBags += (parseInt(o.bags, 10) || 0);
+      });
+
+      // Godown Balance
+      const godownBalance = Math.max(0, totalInwardBags - totalOutwardBags);
+
+      // Residual loose
       let residualLoose = 0;
       const farmersWithLoose = new Set();
       filteredSales.forEach(s => {
-        soldBags += s.soldBags;
         residualLoose += s.residualLooseKg;
         if (s.residualLooseKg > 0) farmersWithLoose.add(s.farmerId);
       });
 
-      const totalQuintals = ((soldBags * 50) + residualLoose) / 100;
+      document.getElementById('kpi-inward-bags').textContent = totalInwardBags;
+      document.getElementById('kpi-inward-lots-sub').textContent = `${filteredLots.length} lot(s) received`;
 
-      document.getElementById('kpi-unweighed-bags').textContent = unweighedBags;
-      document.getElementById('kpi-unweighed-lots-sub').textContent = `${unweighedLots} lot(s) in godown`;
+      document.getElementById('kpi-outward-bags').textContent = totalOutwardBags;
+      document.getElementById('kpi-outward-trips-sub').textContent = `${filteredOutwards.length} dispatch trip(s)`;
 
-      document.getElementById('kpi-sold-bags').textContent = soldBags;
-      document.getElementById('kpi-sold-quintals-sub').textContent = `${totalQuintals.toFixed(2)} Quintals gross`;
+      document.getElementById('kpi-balance-bags').textContent = godownBalance;
 
       document.getElementById('kpi-loose-kg').textContent = residualLoose.toFixed(1);
       document.getElementById('kpi-loose-farmers-sub').textContent = `${farmersWithLoose.size} farmer ledger(s)`;
 
-      document.getElementById('kpi-bills-count').textContent = filteredSales.length;
-
       document.getElementById('badge-inward-count').textContent = this.state.inwardLots.length;
+      document.getElementById('badge-outward-count').textContent = (this.state.outwardDispatches || []).length;
       document.getElementById('badge-sales-count').textContent = this.state.sales.length;
       document.getElementById('badge-loose-count').textContent = farmersWithLoose.size;
 
@@ -967,11 +1165,11 @@
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="8" class="text-center py-10 text-slate-400">
+            <td colspan="10" class="text-center py-10 text-slate-400">
               <div class="flex flex-col items-center justify-center gap-2">
                 <i data-lucide="package-open" class="w-8 h-8 text-slate-300"></i>
                 <p class="font-semibold text-xs">No matching inward lots found.</p>
-                <p class="text-[11px] text-slate-400">Click "+ New Inward" or adjust your filters above.</p>
+                <p class="text-[11px] text-slate-400">Click "+ Inward" or adjust your filters above.</p>
               </div>
             </td>
           </tr>
@@ -985,6 +1183,9 @@
         const loc = this.state.masters.locations.find(l => l.id === lot.locationId) || { name: 'Unknown' };
         const isUnweighed = lot.status === 'Stored (Unweighed)';
 
+        const outwardBags = this.getLotOutwardBags(lot.lotId);
+        const inStockBags = Math.max(0, lot.unweighedBags - outwardBags);
+
         return `
           <tr class="hover:bg-slate-50/80 transition">
             <td class="py-3 px-4"><span class="lot-badge">${lot.lotId}</span></td>
@@ -992,19 +1193,26 @@
             <td class="py-3 px-4 font-bold text-slate-900">${this.escape(farmer.name)}</td>
             <td class="py-3 px-4">${this.escape(comm.name)} <span class="text-slate-400 text-xs">(${comm.localName || ''})</span></td>
             <td class="py-3 px-4 text-center font-bold font-mono text-slate-800">${lot.unweighedBags}</td>
+            <td class="py-3 px-4 text-center font-bold font-mono text-amber-700">${outwardBags > 0 ? outwardBags : 0}</td>
+            <td class="py-3 px-4 text-center font-extrabold font-mono text-blue-700">${inStockBags}</td>
             <td class="py-3 px-4 text-slate-600">${this.escape(loc.name)}</td>
             <td class="py-3 px-4 text-center">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isUnweighed ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
                 ${lot.status}
               </span>
             </td>
-            <td class="py-3 px-4 text-right">
+            <td class="py-3 px-4 text-right space-x-1">
+              ${inStockBags > 0 ? `
+                <button onclick="app.openNewOutwardModal('${lot.lotId}')" title="Dispatch Outward" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition">
+                  <i data-lucide="truck" class="w-3 h-3"></i> Outward
+                </button>
+              ` : ''}
               ${isUnweighed ? `
-                <button onclick="app.openWeighModal('${lot.lotId}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">
-                  <i data-lucide="scale" class="w-3.5 h-3.5"></i> Weigh & Sell
+                <button onclick="app.openWeighModal('${lot.lotId}')" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">
+                  <i data-lucide="scale" class="w-3 h-3"></i> Weigh & Sell
                 </button>
               ` : `
-                <span class="text-emerald-700 font-bold text-xs flex items-center justify-end gap-1">
+                <span class="text-emerald-700 font-bold text-xs inline-flex items-center gap-1">
                   <i data-lucide="check" class="w-3.5 h-3.5"></i> Settled
                 </span>
               `}
@@ -1012,6 +1220,54 @@
           </tr>
         `;
       }).join('');
+    }
+
+    renderOutwardTable() {
+      const tbody = document.getElementById('outward-table-body');
+      const filtered = (this.state.outwardDispatches || []).filter(o => this.matchesFilter(o, 'outward'));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-10 text-slate-400">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <i data-lucide="truck" class="w-8 h-8 text-slate-300"></i>
+                <p class="font-semibold text-xs">No outward dispatches recorded yet.</p>
+                <p class="text-[11px] text-slate-400">Click "+ Outward" to dispatch bags from godown to a buyer truck.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(o => {
+        const farmer = this.state.masters.farmers.find(f => f.id === o.farmerId) || { name: 'Unknown' };
+        const comm = this.state.masters.commodities.find(c => c.id === o.commodityId) || { name: 'Unknown' };
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 px-4 font-mono font-bold text-amber-800">${o.gatePassNo}</td>
+            <td class="py-3 px-4 text-slate-600 text-xs">${this.formatDateTime(o.dateTime)}</td>
+            <td class="py-3 px-4"><span class="lot-badge">${o.lotId}</span></td>
+            <td class="py-3 px-4">${this.escape(comm.name)}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">${this.escape(farmer.name)}</td>
+            <td class="py-3 px-4 text-center font-bold font-mono text-amber-700 text-sm">${o.bags} Bags</td>
+            <td class="py-3 px-4 font-semibold text-slate-800">${this.escape(o.receiver)}</td>
+            <td class="py-3 px-4 font-mono font-bold uppercase text-slate-700">${this.escape(o.vehicleNo)}</td>
+            <td class="py-3 px-4 text-right">
+              <button onclick='app.showOutwardSlipById("${o.id}")' class="px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition inline-flex items-center gap-1">
+                <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Pass
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    showOutwardSlipById(id) {
+      const outward = (this.state.outwardDispatches || []).find(o => o.id === id);
+      if (outward) this.showOutwardSlip(outward);
     }
 
     renderSalesTable() {
@@ -1219,12 +1475,16 @@
         const farmer = this.state.masters.farmers.find(f => f.id === l.farmerId) || { name: 'Unknown' };
         const comm = this.state.masters.commodities.find(c => c.id === l.commodityId) || { name: 'Unknown' };
         const loc = this.state.masters.locations.find(item => item.id === l.locationId) || { name: 'Unknown' };
+        const outwardBags = this.getLotOutwardBags(l.lotId);
+        const inStock = Math.max(0, l.unweighedBags - outwardBags);
         return {
           'Lot ID': l.lotId,
           'Arrival Date': l.arrivalDateTime,
           'Farmer': farmer.name,
           'Commodity': comm.name,
-          'Raw Unweighed Bags': l.unweighedBags,
+          'Inward Raw Bags': l.unweighedBags,
+          'Dispatched Out Bags': outwardBags,
+          'Remaining in Godown': inStock,
           'Storage Location': loc.name,
           'Status': l.status
         };
@@ -1232,7 +1492,27 @@
       const wsInward = XLSX.utils.json_to_sheet(inwardRows.length ? inwardRows : [{ Info: 'No inward records' }]);
       XLSX.utils.book_append_sheet(wb, wsInward, 'Inward_Produce');
 
-      // Sheet 2: Sales Ledger
+      // Sheet 2: Outward Dispatches (NEW!)
+      const outwardRows = (this.state.outwardDispatches || []).map(o => {
+        const farmer = this.state.masters.farmers.find(f => f.id === o.farmerId) || { name: 'Unknown' };
+        const comm = this.state.masters.commodities.find(c => c.id === o.commodityId) || { name: 'Unknown' };
+        return {
+          'Gate Pass #': o.gatePassNo,
+          'Date': o.dateTime,
+          'Source Lot ID': o.lotId,
+          'Farmer': farmer.name,
+          'Commodity': comm.name,
+          'Dispatched Bags': o.bags,
+          'Purpose': o.type,
+          'Consignee / Receiver': o.receiver,
+          'Vehicle #': o.vehicleNo,
+          'Driver / Notes': o.notes
+        };
+      });
+      const wsOutward = XLSX.utils.json_to_sheet(outwardRows.length ? outwardRows : [{ Info: 'No outward dispatches' }]);
+      XLSX.utils.book_append_sheet(wb, wsOutward, 'Outward_Dispatches');
+
+      // Sheet 3: Sales Ledger
       const salesRows = this.state.sales.map(s => {
         const farmer = this.state.masters.farmers.find(f => f.id === s.farmerId) || { name: 'Unknown' };
         const buyer = this.state.masters.buyers.find(b => b.id === s.buyerId) || { name: 'Unknown' };
@@ -1253,7 +1533,7 @@
       const wsSales = XLSX.utils.json_to_sheet(salesRows.length ? salesRows : [{ Info: 'No sales records' }]);
       XLSX.utils.book_append_sheet(wb, wsSales, 'Sales_Audit_Ledger');
 
-      // Sheet 3: Masters
+      // Sheet 4: Masters
       const wsFarmers = XLSX.utils.json_to_sheet(this.state.masters.farmers.length ? this.state.masters.farmers : [{ Info: 'No farmers' }]);
       XLSX.utils.book_append_sheet(wb, wsFarmers, 'Master_Farmers');
 
