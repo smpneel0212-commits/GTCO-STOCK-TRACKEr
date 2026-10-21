@@ -47,7 +47,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=3.5">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-600 selection:text-white">
 
@@ -145,10 +145,10 @@
               <div class="flex items-center gap-2">
                 <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">GTCO Stock Tracker</h1>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-100 text-brand-800 border border-brand-200">
-                  <span class="w-1.5 h-1.5 rounded-full bg-brand-600 mr-1.5 animate-pulse"></span> Mandi Active
+                  <span class="w-1.5 h-1.5 rounded-full bg-brand-600 mr-1.5 animate-pulse"></span> Live Mandi
                 </span>
               </div>
-              <p class="text-xs text-slate-500 font-medium hidden sm:block">Neelahalli & APMC Mandi Inward, Outward & Loose Stock Ledger</p>
+              <p class="text-xs text-slate-500 font-medium hidden sm:block">Inward • Outward Dispatch • 50kg Inventory</p>
             </div>
 
             <!-- User Auth Badge & Lock Action -->
@@ -169,7 +169,7 @@
             <button id="nav-btn-inward" onclick="app.navigate('inward')" class="nav-tab active flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
               <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-600"></i>
               <span>Inward Lots</span>
-              <span id="badge-inward-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">19</span>
+              <span id="badge-inward-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
             </button>
             <button id="nav-btn-outward" onclick="app.navigate('outward')" class="nav-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
               <i data-lucide="arrow-up-right" class="w-4 h-4 text-amber-600"></i>
@@ -178,17 +178,17 @@
             </button>
             <button id="nav-btn-sales" onclick="app.navigate('sales')" class="nav-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
               <i data-lucide="scale" class="w-4 h-4 text-blue-600"></i>
-              <span>Sales & Kuntal</span>
-              <span id="badge-sales-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">16</span>
+              <span>Sales & Weighing</span>
+              <span id="badge-sales-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
             </button>
             <button id="nav-btn-loose" onclick="app.navigate('loose')" class="nav-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
               <i data-lucide="wheat" class="w-4 h-4 text-emerald-700"></i>
-              <span>Loose Stock Ledger</span>
-              <span id="badge-loose-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">14</span>
+              <span>Farmer Loose Stock</span>
+              <span id="badge-loose-count" class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">0</span>
             </button>
             <button id="nav-btn-master" onclick="app.navigate('master')" class="nav-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
               <i data-lucide="sliders" class="w-4 h-4 text-slate-600"></i>
-              <span>Farmers & Masters</span>
+              <span>Masters</span>
             </button>
           </nav>
 
@@ -197,7 +197,7 @@
             <!-- Excel Export -->
             <button onclick="app.exportToExcel()" title="Export Inward, Outward & Ledger to Excel" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
               <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
-              <span>Export Excel</span>
+              <span>Export</span>
             </button>
 
             <!-- New Outward Button -->
@@ -244,61 +244,61 @@
     <!-- MAIN APP CONTAINER -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-      <!-- REAL-TIME KPI SUMMARY BANNER (Directly matching sheet metrics) -->
+      <!-- REAL-TIME KPI SUMMARY BANNER (Filters adaptively) -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <!-- KPI 1: Total Unweighed Bags Inward -->
+        <!-- KPI 1: Inward Total Received -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
           <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 flex-shrink-0">
             <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
           </div>
           <div class="min-w-0">
-            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Unweighed Bags Inward</div>
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Inward Stock</div>
             <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-              <span id="kpi-inward-bags">264</span> <span class="text-xs font-semibold text-slate-500">bags</span>
+              <span id="kpi-inward-bags">0</span> <span class="text-xs font-semibold text-slate-500">bags</span>
             </div>
-            <div class="text-[11px] text-slate-400 truncate" id="kpi-inward-lots-sub">19 farmer lots received</div>
+            <div class="text-[11px] text-slate-400 truncate" id="kpi-inward-lots-sub">0 lots received</div>
           </div>
         </div>
 
-        <!-- KPI 2: Weighed & Sold Kuntal Bags -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
-          <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200 flex-shrink-0">
-            <i data-lucide="check-circle" class="w-5 h-5"></i>
-          </div>
-          <div class="min-w-0">
-            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sold Kuntal Bags</div>
-            <div class="text-lg sm:text-xl font-extrabold text-blue-700 leading-tight">
-              <span id="kpi-kuntal-bags">213</span> <span class="text-xs font-semibold text-slate-500">50kg bags</span>
-            </div>
-            <div class="text-[11px] text-slate-400 truncate" id="kpi-sold-lots-sub">16 lots settled & sold</div>
-          </div>
-        </div>
-
-        <!-- KPI 3: Total Residual Loose Stock (kg) -->
+        <!-- KPI 2: Outward Total Dispatched -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
           <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200 flex-shrink-0">
-            <i data-lucide="wheat" class="w-5 h-5"></i>
+            <i data-lucide="truck" class="w-5 h-5"></i>
           </div>
           <div class="min-w-0">
-            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Loose Stock</div>
-            <div class="text-lg sm:text-xl font-extrabold text-amber-900 leading-tight">
-              <span id="kpi-loose-kg">229</span> <span class="text-xs font-semibold text-slate-500">kg</span>
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Outward Dispatched</div>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              <span id="kpi-outward-bags">0</span> <span class="text-xs font-semibold text-slate-500">bags</span>
             </div>
-            <div class="text-[11px] text-amber-700 font-bold truncate" id="kpi-loose-sub">4 Convertible 50kg Bags + 29 kg</div>
+            <div class="text-[11px] text-slate-400 truncate" id="kpi-outward-trips-sub">0 dispatch trips</div>
           </div>
         </div>
 
-        <!-- KPI 4: Unsold Stock in Godown -->
+        <!-- KPI 3: Current Stock on Hand in Godown -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
-          <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 flex-shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200 flex-shrink-0">
             <i data-lucide="box" class="w-5 h-5"></i>
           </div>
           <div class="min-w-0">
-            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Unsold Godown Stock</div>
-            <div class="text-lg sm:text-xl font-extrabold text-purple-700 leading-tight">
-              <span id="kpi-unsold-bags">77</span> <span class="text-xs font-semibold text-slate-500">raw bags</span>
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Godown Balance</div>
+            <div class="text-lg sm:text-xl font-extrabold text-blue-700 leading-tight">
+              <span id="kpi-balance-bags">0</span> <span class="text-xs font-semibold text-slate-500">bags in store</span>
             </div>
-            <div class="text-[11px] text-slate-400 truncate">3 unweighed lots stored</div>
+            <div class="text-[11px] text-slate-400 truncate">(Inward minus Outward)</div>
+          </div>
+        </div>
+
+        <!-- KPI 4: Residual Loose Stock -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 flex-shrink-0">
+            <i data-lucide="wheat" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Shop Loose Stock</div>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              <span id="kpi-loose-kg">0</span> <span class="text-xs font-semibold text-slate-500">kg</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate" id="kpi-loose-farmers-sub">0 farmers with balance</div>
           </div>
         </div>
       </section>
@@ -312,7 +312,7 @@
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <i data-lucide="search" class="w-4 h-4"></i>
             </div>
-            <input type="text" id="filter-search-text" oninput="app.handleFilterChange()" placeholder="Search by Farmer name, Village, Lot ID, Location, Bill #..."
+            <input type="text" id="filter-search-text" oninput="app.handleFilterChange()" placeholder="Search by Farmer, Commodity, Lot ID, Vehicle #, Gate Pass, Godown..."
               class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-xs sm:text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
           </div>
 
@@ -355,45 +355,36 @@
       </section>
 
       <!-- ========================================== -->
-      <!-- VIEW 1: INWARD LOTS GRID (WITH SHEET COLS) -->
+      <!-- VIEW 1: INWARD LOTS GRID                   -->
       <!-- ========================================== -->
       <section id="view-inward" class="view-panel active space-y-4">
         <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
           
           <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">Agriculturist / Farmer Produce Inward</h2>
-              <p class="text-xs text-slate-500">Neelahalli APMC produce lots inward & weighing records</p>
+              <h2 class="text-base font-bold text-slate-900">Inward Farmer Produce Lots</h2>
+              <p class="text-xs text-slate-500">Raw unweighed bags received from farmers into godown</p>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="app.resetToSheetData()" title="Reload all 20 Mandi Sheet entries" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
-                <span>Reload Sheet Data</span>
-              </button>
-              <button onclick="app.openNewInwardModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>+ Inward Entry</span>
-              </button>
-            </div>
+            <button onclick="app.openNewInwardModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Record New Inward</span>
+            </button>
           </div>
 
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                  <th class="py-3 px-3">Date</th>
-                  <th class="py-3 px-3">Lot ID</th>
-                  <th class="py-3 px-3">Agriculturist / Farmer Name</th>
-                  <th class="py-3 px-3">Village</th>
-                  <th class="py-3 px-3 text-center">Unweighed Bags Inward</th>
-                  <th class="py-3 px-3 text-center">KUNTAL BAG (50kg)</th>
-                  <th class="py-3 px-3 text-center">KG BAG (Loose kg)</th>
-                  <th class="py-3 px-3 text-right">TOTAL WEIGHT</th>
-                  <th class="py-3 px-3 text-right">Sold (50kg Bags)</th>
-                  <th class="py-3 px-3 text-right">UN SOLD WEIGHT</th>
-                  <th class="py-3 px-3">Location</th>
-                  <th class="py-3 px-3 text-center">Status</th>
-                  <th class="py-3 px-3 text-right">Actions</th>
+                  <th class="py-3 px-4">Lot ID</th>
+                  <th class="py-3 px-4">Arrival Date</th>
+                  <th class="py-3 px-4">Farmer Name</th>
+                  <th class="py-3 px-4">Commodity</th>
+                  <th class="py-3 px-4 text-center">Inward Bags</th>
+                  <th class="py-3 px-4 text-center">Dispatched Out</th>
+                  <th class="py-3 px-4 text-center font-extrabold text-blue-700">In Stock</th>
+                  <th class="py-3 px-4">Location</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody id="inward-table-body" class="divide-y divide-slate-100">
@@ -406,7 +397,7 @@
       </section>
 
       <!-- ========================================== -->
-      <!-- VIEW 2: OUTWARD DISPATCHES                 -->
+      <!-- VIEW 2: OUTWARD DISPATCHES (NEW!)          -->
       <!-- ========================================== -->
       <section id="view-outward" class="view-panel space-y-4">
         <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -414,7 +405,7 @@
           <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 class="text-base font-bold text-slate-900">Outward Stock Dispatches & Gate Passes</h2>
-              <p class="text-xs text-slate-500">Produce loaded and dispatched from godown</p>
+              <p class="text-xs text-slate-500">Produce loaded and dispatched from godown (to buyers, mills, or farmer returns)</p>
             </div>
             <button onclick="app.openNewOutwardModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition">
               <i data-lucide="truck" class="w-4 h-4"></i>
@@ -455,7 +446,7 @@
           <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h2 class="text-base font-bold text-slate-900">APMC Commercial Sale Ledger</h2>
-              <p class="text-xs text-slate-500">Transactions split strictly into whole standard Kuntal bags and residual loose weight</p>
+              <p class="text-xs text-slate-500">Transactions split strictly into whole 50kg standard bags and residual loose weight</p>
             </div>
           </div>
 
@@ -464,13 +455,13 @@
               <thead>
                 <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
                   <th class="py-3 px-4">Bill Number</th>
-                  <th class="py-3 px-4">Date</th>
-                  <th class="py-3 px-4">Farmer Name</th>
-                  <th class="py-3 px-4">Village</th>
+                  <th class="py-3 px-4">Date & Time</th>
+                  <th class="py-3 px-4">Buyer / Trader</th>
                   <th class="py-3 px-4">Lot ID</th>
-                  <th class="py-3 px-4 text-center">Kuntal Bags Sold (50kg)</th>
-                  <th class="py-3 px-4 text-center">KG Bag (Loose)</th>
-                  <th class="py-3 px-4 text-right">Total Net Weight</th>
+                  <th class="py-3 px-4">Commodity</th>
+                  <th class="py-3 px-4">Sold Bags (50kg)</th>
+                  <th class="py-3 px-4">Residual Loose</th>
+                  <th class="py-3 px-4">Farmer Credited</th>
                   <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -487,49 +478,23 @@
       <!-- VIEW 4: FARMER LOOSE STOCK LEDGER          -->
       <!-- ========================================== -->
       <section id="view-loose" class="view-panel space-y-4">
-        
-        <!-- Summary Callout matching user's CSV -->
-        <div class="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
-              <h3 class="text-sm font-extrabold text-amber-950 uppercase tracking-wider">Residual Loose Stock Consolidation</h3>
-            </div>
-            <p class="text-xs text-amber-800 mt-0.5">Residual quantities (kg) accumulated across farmer lots held in APMC shop inventory</p>
-          </div>
-          <div class="flex items-center gap-4 text-center">
-            <div class="bg-white px-3.5 py-2 rounded-xl border border-amber-200 shadow-xs">
-              <span class="text-[10px] font-bold text-slate-500 uppercase block">Total Loose Stock</span>
-              <span class="text-lg font-extrabold text-amber-900 font-mono">229 kg</span>
-            </div>
-            <div class="bg-white px-3.5 py-2 rounded-xl border border-amber-200 shadow-xs">
-              <span class="text-[10px] font-bold text-slate-500 uppercase block">Convertible Bags (50kg)</span>
-              <span class="text-lg font-extrabold text-brand-700 font-mono">4 Bags</span>
-            </div>
-            <div class="bg-white px-3.5 py-2 rounded-xl border border-amber-200 shadow-xs">
-              <span class="text-[10px] font-bold text-slate-500 uppercase block">Remaining Loose</span>
-              <span class="text-lg font-extrabold text-amber-900 font-mono">29 kg</span>
-            </div>
-          </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           
           <!-- Cumulative Balances Card -->
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
             <div class="p-4 sm:p-5 border-b border-slate-100">
               <h2 class="text-base font-bold text-slate-900">Cumulative Loose Stock by Farmer</h2>
-              <p class="text-xs text-slate-500">Total unbagged residual kg credited to each farmer</p>
+              <p class="text-xs text-slate-500">Unbagged residual kg (0–49 kg) credited to farmers and retained in shop inventory</p>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                   <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
                     <th class="py-3 px-4">Farmer Name</th>
-                    <th class="py-3 px-4">Village</th>
+                    <th class="py-3 px-4">Commodity</th>
                     <th class="py-3 px-4 text-right">Total Loose</th>
-                    <th class="py-3 px-4 text-right">Convertible (50kg Bags)</th>
-                    <th class="py-3 px-4 text-right">Remaining Loose</th>
+                    <th class="py-3 px-4 text-right">Equiv. 50kg Bags</th>
+                    <th class="py-3 px-4 text-right">Remainder</th>
                   </tr>
                 </thead>
                 <tbody id="loose-summary-body" class="divide-y divide-slate-100">
@@ -573,12 +538,12 @@
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 class="text-base sm:text-lg font-extrabold text-slate-900">APMC Master Configuration</h2>
-            <p class="text-xs text-slate-500">Farmers Directory, Commodities, Godown Locations, and Buyers</p>
+            <p class="text-xs text-slate-500">Define your own Farmers, Commodities, Godown Locations, and Buyers</p>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="app.resetToSheetData()" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
-              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
-              <span>Reset to Mandi Sheet Data</span>
+            <button onclick="app.populateDefaultAPMCCommodities()" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span>Load Standard Commodities</span>
             </button>
           </div>
         </div>
@@ -588,17 +553,17 @@
           <button id="master-tab-farmers" onclick="app.switchMasterTab('farmers')" class="master-subtab active px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
             <i data-lucide="users" class="w-4 h-4"></i>
             <span>Farmers Directory</span>
-            <span id="badge-master-farmers" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">18</span>
+            <span id="badge-master-farmers" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
           </button>
           <button id="master-tab-commodities" onclick="app.switchMasterTab('commodities')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
             <i data-lucide="wheat" class="w-4 h-4"></i>
             <span>Commodities Master</span>
-            <span id="badge-master-commodities" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">1</span>
+            <span id="badge-master-commodities" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
           </button>
           <button id="master-tab-locations" onclick="app.switchMasterTab('locations')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
             <i data-lucide="map-pin" class="w-4 h-4"></i>
             <span>Storage Locations</span>
-            <span id="badge-master-locations" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">1</span>
+            <span id="badge-master-locations" class="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
           </button>
           <button id="master-tab-buyers" onclick="app.switchMasterTab('buyers')" class="master-subtab px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
             <i data-lucide="briefcase" class="w-4 h-4"></i>
@@ -612,7 +577,7 @@
           <div class="p-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 class="text-sm font-bold text-slate-900">Farmers Master Directory</h3>
-              <p class="text-xs text-slate-500">Farmers registered from Neelahalli, Bamnalli, Koknalli</p>
+              <p class="text-xs text-slate-500">Farmers depositing produce at your APMC shop</p>
             </div>
             <button onclick="app.openFarmerModal()" class="px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition flex items-center gap-1">
               <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
@@ -642,7 +607,7 @@
           <div class="p-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 class="text-sm font-bold text-slate-900">Commodity Master Configuration</h3>
-              <p class="text-xs text-slate-500">Commodities configured for standard bag & Kuntal units</p>
+              <p class="text-xs text-slate-500">Commodity names, standard bag unit (kg), and dynamic lot sequence prefix</p>
             </div>
             <button onclick="app.openCommodityModal()" class="px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition flex items-center gap-1">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -656,7 +621,7 @@
                   <th class="py-3 px-4">Code</th>
                   <th class="py-3 px-4">Common Name</th>
                   <th class="py-3 px-4">Local / Regional Name</th>
-                  <th class="py-3 px-4 text-center">Standard Unit (kg)</th>
+                  <th class="py-3 px-4 text-center">Standard Bag Unit</th>
                   <th class="py-3 px-4 text-center">Lot Prefix</th>
                   <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -793,7 +758,7 @@
             <label for="inward-bags" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Unweighed Raw Bags *
             </label>
-            <input type="number" step="0.5" id="inward-bags" min="0.5" required placeholder="e.g. 10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
+            <input type="number" id="inward-bags" min="1" required placeholder="e.g. 10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
           </div>
 
           <div>
@@ -829,7 +794,7 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- MODAL: RECORD OUTWARD DISPATCH             -->
+  <!-- MODAL: RECORD OUTWARD DISPATCH (NEW!)      -->
   <!-- ========================================== -->
   <div id="modal-outward" class="app-modal fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -894,7 +859,7 @@
             <label for="outward-bags" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Outward Bags to Dispatch *
             </label>
-            <input type="number" step="0.5" id="outward-bags" min="0.5" required placeholder="e.g. 10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-slate-50 focus:bg-white text-slate-900">
+            <input type="number" id="outward-bags" min="1" required placeholder="e.g. 10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-slate-50 focus:bg-white text-slate-900">
           </div>
 
           <div>
@@ -975,7 +940,7 @@
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="text-base font-extrabold text-slate-900">Scale Weighing & Commercial Sale</h3>
-          <p class="text-xs text-slate-500">Kuntal bag standardization, buyer billing, and loose stock split</p>
+          <p class="text-xs text-slate-500">Standardized 50kg bag weighing, buyer billing, and loose stock split</p>
         </div>
         <button onclick="app.closeModal('modal-sale')" class="text-slate-400 hover:text-slate-600 p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -1000,7 +965,7 @@
             <span id="sale-display-commodity" class="font-bold text-slate-900 truncate block">--</span>
           </div>
           <div>
-            <span class="text-slate-500 block">Raw Bags Inward</span>
+            <span class="text-slate-500 block">Raw Bags</span>
             <span id="sale-display-rawbags" class="font-bold text-slate-900">--</span>
           </div>
         </div>
@@ -1009,33 +974,33 @@
         <div class="p-4 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-3">
           <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase tracking-wider">
             <i data-lucide="scale" class="w-4 h-4 text-amber-600"></i>
-            <span>Scale Weighing Breakdown (Kuntal Bag & KG Bag)</span>
+            <span>Scale Weighing Breakdown (50 kg Standard Unit)</span>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Total Net Weight (Sheet: e.g. 19.07)</label>
-              <input type="number" step="0.01" id="sale-input-total-kg" oninput="app.handleScaleWeightChange()" placeholder="e.g. 19.07"
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Total Net Weight (kg)</label>
+              <input type="number" step="0.1" id="sale-input-total-kg" oninput="app.handleScaleWeightChange()" placeholder="e.g. 575"
                 class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-white text-slate-900">
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Kuntal Bags (50kg Each)</label>
-              <input type="number" step="1" id="sale-input-bags" oninput="app.handleBagOrLooseChange()" min="0" required placeholder="e.g. 19"
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Sold Whole Bags (50kg)</label>
+              <input type="number" id="sale-input-bags" oninput="app.handleBagOrLooseChange()" min="0" required placeholder="e.g. 11"
                 class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-white text-slate-900">
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">KG Bag (Residual Loose kg)</label>
-              <input type="number" step="1" id="sale-input-loose" oninput="app.handleBagOrLooseChange()" min="0" max="49" required placeholder="e.g. 7"
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Residual Loose (kg)</label>
+              <input type="number" step="0.1" id="sale-input-loose" oninput="app.handleBagOrLooseChange()" min="0" max="49.99" required placeholder="e.g. 25"
                 class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-white text-slate-900">
             </div>
           </div>
 
           <div class="text-[11px] font-mono text-amber-900 bg-amber-100/70 p-2 rounded-lg text-center font-bold" id="sale-live-calc-text">
-            Yield: 0 Kuntal Bags (50kg each) + 0 kg Loose = 0 kg Total Net
+            Yield: 0 Whole Bags (0 kg) + 0 kg Loose = 0 kg Total Net
           </div>
         </div>
 
-        <!-- Commercial Details -->
+        <!-- Buyer & Commercial Details -->
         <div class="space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -1048,13 +1013,15 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <label for="sale-buyer" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Buyer / Trader Name
+                  Buyer / Trader *
                 </label>
                 <button type="button" onclick="app.openBuyerModal(true)" class="text-[11px] text-brand-700 hover:text-brand-800 font-bold flex items-center gap-1 hover:underline">
                   <i data-lucide="plus-circle" class="w-3 h-3"></i> + Add Buyer
                 </button>
               </div>
-              <input type="text" id="sale-buyer-input" placeholder="e.g. APMC Open Auction" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900" value="APMC Open Auction">
+              <select id="sale-buyer" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
+                <option value="" disabled selected>-- Select Buyer --</option>
+              </select>
             </div>
           </div>
 
@@ -1068,7 +1035,7 @@
 
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Buyer Payable (Sold Qtl Only)
+                Buyer Payable (Whole Bags Only)
               </label>
               <input type="text" id="sale-buyer-amount" readonly class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-slate-900 font-mono font-extrabold text-sm" value="₹ 0.00">
             </div>
@@ -1078,19 +1045,19 @@
         <!-- Split Preview Cards -->
         <div class="grid grid-cols-3 gap-2 text-xs">
           <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
-            <span class="block text-emerald-800 font-bold">Sold Weight</span>
+            <span class="block text-emerald-800 font-bold">Buyer Billed</span>
             <span id="preview-buyer-bags" class="text-sm font-extrabold text-emerald-950">0 Bags</span>
-            <span class="block text-[10px] text-emerald-600">Whole 50kg bags</span>
+            <span class="block text-[10px] text-emerald-600">Whole 50kg bags only</span>
           </div>
           <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200">
             <span class="block text-blue-800 font-bold">Farmer Credit</span>
-            <span id="preview-farmer-credit" class="text-sm font-extrabold text-blue-950">0 Bags + 0 kg</span>
+            <span id="preview-farmer-credit" class="text-sm font-extrabold text-blue-950">0 + 0 kg</span>
             <span class="block text-[10px] text-blue-600">Full yield credited</span>
           </div>
           <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-            <span class="block text-amber-800 font-bold">Unsold Loose</span>
+            <span class="block text-amber-800 font-bold">Shop Loose Bin</span>
             <span id="preview-shop-loose" class="text-sm font-extrabold text-amber-950">0 kg</span>
-            <span class="block text-[10px] text-amber-600">Shop loose ledger</span>
+            <span class="block text-[10px] text-amber-600">Credited to farmer</span>
           </div>
         </div>
 
@@ -1141,7 +1108,7 @@
         <input type="hidden" id="farmer-edit-id">
         <div>
           <label for="farmer-input-name" class="block text-xs font-bold text-slate-700 uppercase mb-1">Farmer Full Name *</label>
-          <input type="text" id="farmer-input-name" required placeholder="e.g. SMPATIL" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
+          <input type="text" id="farmer-input-name" required placeholder="e.g. Ramesh Patil" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
         </div>
         <div>
           <label for="farmer-input-mobile" class="block text-xs font-bold text-slate-700 uppercase mb-1">Mobile / Phone</label>
@@ -1149,7 +1116,7 @@
         </div>
         <div>
           <label for="farmer-input-village" class="block text-xs font-bold text-slate-700 uppercase mb-1">Village / Address</label>
-          <input type="text" id="farmer-input-village" placeholder="e.g. NEELAHALLI" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
+          <input type="text" id="farmer-input-village" placeholder="e.g. Malkhed, Kalaburagi" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
         </div>
         <div>
           <label for="farmer-input-notes" class="block text-xs font-bold text-slate-700 uppercase mb-1">Notes</label>
@@ -1217,7 +1184,7 @@
         <input type="hidden" id="location-edit-id">
         <div>
           <label for="location-input-name" class="block text-xs font-bold text-slate-700 uppercase mb-1">Location Name *</label>
-          <input type="text" id="location-input-name" required placeholder="e.g. BAY A" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
+          <input type="text" id="location-input-name" required placeholder="e.g. Godown 1 - Bin A" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 focus:bg-white text-slate-900">
         </div>
         <div>
           <label for="location-input-desc" class="block text-xs font-bold text-slate-700 uppercase mb-1">Details / Notes</label>
@@ -1262,6 +1229,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=3.5"></script>
+  <script src="script.js?v=3.0"></script>
 </body>
 </html>
+

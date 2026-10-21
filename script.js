@@ -2,7 +2,7 @@
  * GTCO Stock Tracker - APMC Agent Ledger & Inventory Platform
  * Master-driven architecture inspired by Paisabhai.
  * Protected with Paisabhai Cross-Device Access Lock (SHARNU PATIL / 02161301).
- * Pre-loaded with official Neelahalli APMC Mandi Ledger Entries (264 bags, 213 Kuntal, 229kg loose).
+ * Pre-loaded with official Mandi Urad (Black Gram) entries from Neelahalli / Bamnalli / Koknalli.
  */
 
 (function () {
@@ -15,12 +15,21 @@
     storageKey: 'gtco_auth_session_v1'
   };
 
-  // Bump storage version so newly loaded sheet entries populate immediately
-  const STORAGE_KEY = 'gtco_stock_tracker_v5_50kg';
+  const STORAGE_KEY = 'gtco_stock_tracker_v3';
 
-  // Seed data matching the user's Neelahalli Mandi sheet exactly
-  const SHEET_FARMERS = [
-    { id: 'f_smpatil', name: 'SMPATIL', mobile: '', village: 'NEELAHALLI', notes: 'Mandi Account' },
+  // Standard APMC Master Reference
+  const STANDARD_APMC_COMMODITIES = [
+    { id: 'comm_ud', code: 'UD', prefix: 'U', name: 'Black Gram', localName: 'Urad', unitKg: 100 },
+    { id: 'comm_tr', code: 'TR', prefix: 'T', name: 'Pigeon Pea', localName: 'Toor / Tuvar', unitKg: 50 },
+    { id: 'comm_ch', code: 'CH', prefix: 'C', name: 'Bengal Gram', localName: 'Chana', unitKg: 50 },
+    { id: 'comm_mg', code: 'MG', prefix: 'M', name: 'Green Gram', localName: 'Moong', unitKg: 50 },
+    { id: 'comm_jw', code: 'JW', prefix: 'J', name: 'Sorghum', localName: 'Jowar', unitKg: 50 },
+    { id: 'comm_sf', code: 'SF', prefix: 'S', name: 'Safflower', localName: 'Kusub', unitKg: 50 }
+  ];
+
+  // Official Mandi Farmers Master List
+  const INITIAL_FARMERS = [
+    { id: 'f_smpatil', name: 'SMPATIL', mobile: '', village: 'NEELAHALLI', notes: 'Lead farmer' },
     { id: 'f_raju_mankar', name: 'RAJU MANKAR', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_baswaraj_sharnaiyya', name: 'BASWARAJ SHARNAIYYA', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_anil_pujari', name: 'ANIL PUJARI', mobile: '', village: 'NEELAHALLI', notes: '' },
@@ -32,7 +41,7 @@
     { id: 'f_chandamma_byader', name: 'CHANDAMMA BYADER', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_shankappa_malagi', name: 'SHANKAPPA MALAGI', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_kalappa_madival', name: 'KALAPPA MADIVAL', mobile: '', village: 'NEELAHALLI', notes: '' },
-    { id: 'f_jagadevi_police_patil', name: 'JAGADEVI POLICE PATIL', mobile: '', village: 'NEELAHALLI', notes: '' },
+    { id: 'f_jagadevi_patil', name: 'JAGADEVI POLICE PATIL', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_marthand_pujari', name: 'MARTHAND PUJARI', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_bmpatil', name: 'BMPATIL', mobile: '', village: 'NEELAHALLI', notes: '' },
     { id: 'f_nagappa_ambanna', name: 'NAGAPPA AMBANNA', mobile: '', village: 'NEELAHALLI', notes: '' },
@@ -40,53 +49,57 @@
     { id: 'f_kashappa_byader', name: 'KASHAPPA BYADER', mobile: '', village: 'NEELAHALLI', notes: '' }
   ];
 
-  const SHEET_COMMODITIES = [
-    { id: 'comm_tr', code: 'TR', prefix: 'T', name: 'Pigeon Pea', localName: 'Toor / Kuntal Bag (50kg)', unitKg: 50 }
+  const INITIAL_LOCATIONS = [
+    { id: 'loc_bay_a', name: 'BAY A', desc: 'Main APMC Floor Godown' },
+    { id: 'loc_godown_1', name: 'Godown 1', desc: 'Central Storage Bin' }
   ];
 
-  const SHEET_LOCATIONS = [
-    { id: 'loc_bay_a', name: 'BAY A', desc: 'Main APMC Floor Bay' }
+  const INITIAL_BUYERS = [
+    { id: 'buyer_mandi', name: 'APMC Mandi Traders', contact: 'Rajesh Kumar', license: 'APMC-KA-2026' },
+    { id: 'buyer_shree', name: 'Shree Traders', contact: 'Anand Patil', license: 'APMC-MH-0412' }
   ];
 
-  const SHEET_INWARD_LOTS = [
-    { lotId: 'T01', arrivalDateTime: '2026-09-20T09:30', farmerId: 'f_smpatil', commodityId: 'comm_tr', unweighedBags: 11, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T02', arrivalDateTime: '2026-09-22T10:15', farmerId: 'f_raju_mankar', commodityId: 'comm_tr', unweighedBags: 14, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T03', arrivalDateTime: '2026-09-22T11:00', farmerId: 'f_baswaraj_sharnaiyya', commodityId: 'comm_tr', unweighedBags: 53, locationId: 'loc_bay_a', status: 'Stored (Unweighed)' },
-    { lotId: 'T04', arrivalDateTime: '2026-09-24T08:30', farmerId: 'f_smpatil', commodityId: 'comm_tr', unweighedBags: 16.5, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T05', arrivalDateTime: '2026-09-24T09:00', farmerId: 'f_smpatil', commodityId: 'comm_tr', unweighedBags: 63, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T06', arrivalDateTime: '2026-09-24T09:30', farmerId: 'f_anil_pujari', commodityId: 'comm_tr', unweighedBags: 15, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T07', arrivalDateTime: '2026-09-24T10:00', farmerId: 'f_devappa_k', commodityId: 'comm_tr', unweighedBags: 7, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T08', arrivalDateTime: '2026-09-24T10:30', farmerId: 'f_beerban_hola', commodityId: 'comm_tr', unweighedBags: 5, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T09', arrivalDateTime: '2026-09-24T11:00', farmerId: 'f_sharanu_post', commodityId: 'comm_tr', unweighedBags: 7.5, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T10', arrivalDateTime: '2026-09-24T11:30', farmerId: 'f_siddu_bamnalli', commodityId: 'comm_tr', unweighedBags: 3, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T11', arrivalDateTime: '2026-09-24T12:00', farmerId: 'f_jhangir_saab', commodityId: 'comm_tr', unweighedBags: 6, locationId: 'loc_bay_a', status: 'Stored (Unweighed)' },
-    { lotId: 'T12', arrivalDateTime: '2026-09-24T12:30', farmerId: 'f_chandamma_byader', commodityId: 'comm_tr', unweighedBags: 5, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T13', arrivalDateTime: '2026-09-24T13:00', farmerId: 'f_shankappa_malagi', commodityId: 'comm_tr', unweighedBags: 14, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T14', arrivalDateTime: '2026-09-24T13:30', farmerId: 'f_kalappa_madival', commodityId: 'comm_tr', unweighedBags: 9, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T15', arrivalDateTime: '2026-09-24T14:00', farmerId: 'f_jagadevi_police_patil', commodityId: 'comm_tr', unweighedBags: 5, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T16', arrivalDateTime: '2026-09-24T14:30', farmerId: 'f_marthand_pujari', commodityId: 'comm_tr', unweighedBags: 18, locationId: 'loc_bay_a', status: 'Stored (Unweighed)' },
-    { lotId: 'T17', arrivalDateTime: '2026-09-24T15:30', farmerId: 'f_nagappa_ambanna', commodityId: 'comm_tr', unweighedBags: 8, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T18', arrivalDateTime: '2026-09-24T16:00', farmerId: 'f_baswaraj_devar', commodityId: 'comm_tr', unweighedBags: 3, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
-    { lotId: 'T19', arrivalDateTime: '2026-09-24T16:30', farmerId: 'f_kashappa_byader', commodityId: 'comm_tr', unweighedBags: 1, locationId: 'loc_bay_a', status: 'Weighed & Sold' }
+  // Official Inward Lots (264 Raw Bags Total)
+  const INITIAL_INWARD_LOTS = [
+    { lotId: 'U01', arrivalDateTime: '2026-09-20T10:00', farmerId: 'f_smpatil', commodityId: 'comm_ud', unweighedBags: 11, locationId: 'loc_bay_a', status: 'Weighed & Sold' },
+    { lotId: 'U02', arrivalDateTime: '2026-09-22T09:30', farmerId: 'f_raju_mankar', commodityId: 'comm_ud', unweighedBags: 14, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U03', arrivalDateTime: '2026-09-22T11:00', farmerId: 'f_baswaraj_sharnaiyya', commodityId: 'comm_ud', unweighedBags: 53, locationId: 'loc_godown_1', status: 'Stored (Unweighed)' },
+    { lotId: 'U04', arrivalDateTime: '2026-09-24T09:15', farmerId: 'f_smpatil', commodityId: 'comm_ud', unweighedBags: 16.5, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U05', arrivalDateTime: '2026-09-24T09:30', farmerId: 'f_smpatil', commodityId: 'comm_ud', unweighedBags: 63, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U06', arrivalDateTime: '2026-09-24T10:00', farmerId: 'f_anil_pujari', commodityId: 'comm_ud', unweighedBags: 15, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U07', arrivalDateTime: '2026-09-24T10:15', farmerId: 'f_devappa_k', commodityId: 'comm_ud', unweighedBags: 7, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U08', arrivalDateTime: '2026-09-24T10:30', farmerId: 'f_beerban_hola', commodityId: 'comm_ud', unweighedBags: 5, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U09', arrivalDateTime: '2026-09-24T10:45', farmerId: 'f_sharanu_post', commodityId: 'comm_ud', unweighedBags: 7.5, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U10', arrivalDateTime: '2026-09-24T11:00', farmerId: 'f_siddu_bamnalli', commodityId: 'comm_ud', unweighedBags: 3, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U11', arrivalDateTime: '2026-09-24T11:15', farmerId: 'f_jhangir_saab', commodityId: 'comm_ud', unweighedBags: 6, locationId: 'loc_godown_1', status: 'Stored (Unweighed)' },
+    { lotId: 'U12', arrivalDateTime: '2026-09-24T11:30', farmerId: 'f_chandamma_byader', commodityId: 'comm_ud', unweighedBags: 5, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U13', arrivalDateTime: '2026-09-24T11:45', farmerId: 'f_shankappa_malagi', commodityId: 'comm_ud', unweighedBags: 14, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U14', arrivalDateTime: '2026-09-24T12:00', farmerId: 'f_kalappa_madival', commodityId: 'comm_ud', unweighedBags: 9, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U15', arrivalDateTime: '2026-09-24T12:15', farmerId: 'f_jagadevi_patil', commodityId: 'comm_ud', unweighedBags: 5, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U16', arrivalDateTime: '2026-09-24T12:30', farmerId: 'f_marthand_pujari', commodityId: 'comm_ud', unweighedBags: 18, locationId: 'loc_godown_1', status: 'Stored (Unweighed)' },
+    { lotId: 'U17', arrivalDateTime: '2026-09-24T12:45', farmerId: 'f_nagappa_ambanna', commodityId: 'comm_ud', unweighedBags: 8, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U18', arrivalDateTime: '2026-09-24T13:00', farmerId: 'f_baswaraj_devar', commodityId: 'comm_ud', unweighedBags: 3, locationId: 'loc_godown_1', status: 'Weighed & Sold' },
+    { lotId: 'U19', arrivalDateTime: '2026-09-24T13:15', farmerId: 'f_kashappa_byader', commodityId: 'comm_ud', unweighedBags: 1, locationId: 'loc_godown_1', status: 'Weighed & Sold' }
   ];
 
-  const SHEET_SALES = [
-    { billNumber: 'BILL-2026-0001', dateTime: '2026-09-20T10:00', buyerName: 'APMC Open Auction', lotId: 'T01', farmerId: 'f_smpatil', commodityId: 'comm_tr', soldBags: 11, residualLooseKg: 0, totalWeightQtl: 11.00, ratePerQtl: 7200, totalBuyerPayable: 11 * 7200 },
-    { billNumber: 'BILL-2026-0002', dateTime: '2026-09-22T11:00', buyerName: 'APMC Open Auction', lotId: 'T02', farmerId: 'f_raju_mankar', commodityId: 'comm_tr', soldBags: 19, residualLooseKg: 7, totalWeightQtl: 19.07, ratePerQtl: 7200, totalBuyerPayable: 19 * 7200 },
-    { billNumber: 'BILL-2026-0003', dateTime: '2026-09-24T09:00', buyerName: 'APMC Open Auction', lotId: 'T04', farmerId: 'f_smpatil', commodityId: 'comm_tr', soldBags: 17, residualLooseKg: 39, totalWeightQtl: 17.39, ratePerQtl: 7200, totalBuyerPayable: 17 * 7200 },
-    { billNumber: 'BILL-2026-0004', dateTime: '2026-09-24T09:30', buyerName: 'APMC Open Auction', lotId: 'T05', farmerId: 'f_smpatil', commodityId: 'comm_tr', soldBags: 63, residualLooseKg: 10, totalWeightQtl: 63.10, ratePerQtl: 7200, totalBuyerPayable: 63 * 7200 },
-    { billNumber: 'BILL-2026-0005', dateTime: '2026-09-24T10:00', buyerName: 'APMC Open Auction', lotId: 'T06', farmerId: 'f_anil_pujari', commodityId: 'comm_tr', soldBags: 20, residualLooseKg: 13, totalWeightQtl: 20.13, ratePerQtl: 7200, totalBuyerPayable: 20 * 7200 },
-    { billNumber: 'BILL-2026-0006', dateTime: '2026-09-24T10:30', buyerName: 'APMC Open Auction', lotId: 'T07', farmerId: 'f_devappa_k', commodityId: 'comm_tr', soldBags: 9, residualLooseKg: 5, totalWeightQtl: 9.05, ratePerQtl: 7200, totalBuyerPayable: 9 * 7200 },
-    { billNumber: 'BILL-2026-0007', dateTime: '2026-09-24T11:00', buyerName: 'APMC Open Auction', lotId: 'T08', farmerId: 'f_beerban_hola', commodityId: 'comm_tr', soldBags: 6, residualLooseKg: 1, totalWeightQtl: 6.01, ratePerQtl: 7200, totalBuyerPayable: 6 * 7200 },
-    { billNumber: 'BILL-2026-0008', dateTime: '2026-09-24T11:30', buyerName: 'APMC Open Auction', lotId: 'T09', farmerId: 'f_sharanu_post', commodityId: 'comm_tr', soldBags: 10, residualLooseKg: 3, totalWeightQtl: 10.03, ratePerQtl: 7200, totalBuyerPayable: 10 * 7200 },
-    { billNumber: 'BILL-2026-0009', dateTime: '2026-09-24T12:00', buyerName: 'APMC Open Auction', lotId: 'T10', farmerId: 'f_siddu_bamnalli', commodityId: 'comm_tr', soldBags: 4, residualLooseKg: 16, totalWeightQtl: 4.16, ratePerQtl: 7200, totalBuyerPayable: 4 * 7200 },
-    { billNumber: 'BILL-2026-0010', dateTime: '2026-09-24T13:00', buyerName: 'APMC Open Auction', lotId: 'T12', farmerId: 'f_chandamma_byader', commodityId: 'comm_tr', soldBags: 6, residualLooseKg: 2, totalWeightQtl: 6.02, ratePerQtl: 7200, totalBuyerPayable: 6 * 7200 },
-    { billNumber: 'BILL-2026-0011', dateTime: '2026-09-24T13:30', buyerName: 'APMC Open Auction', lotId: 'T13', farmerId: 'f_shankappa_malagi', commodityId: 'comm_tr', soldBags: 18, residualLooseKg: 18, totalWeightQtl: 18.18, ratePerQtl: 7200, totalBuyerPayable: 18 * 7200 },
-    { billNumber: 'BILL-2026-0012', dateTime: '2026-09-24T14:00', buyerName: 'APMC Open Auction', lotId: 'T14', farmerId: 'f_kalappa_madival', commodityId: 'comm_tr', soldBags: 11, residualLooseKg: 13, totalWeightQtl: 11.13, ratePerQtl: 7200, totalBuyerPayable: 11 * 7200 },
-    { billNumber: 'BILL-2026-0013', dateTime: '2026-09-24T14:30', buyerName: 'APMC Open Auction', lotId: 'T15', farmerId: 'f_jagadevi_police_patil', commodityId: 'comm_tr', soldBags: 7, residualLooseKg: 8, totalWeightQtl: 7.08, ratePerQtl: 7200, totalBuyerPayable: 7 * 7200 },
-    { billNumber: 'BILL-2026-0014', dateTime: '2026-09-24T16:00', buyerName: 'APMC Open Auction', lotId: 'T17', farmerId: 'f_nagappa_ambanna', commodityId: 'comm_tr', soldBags: 8, residualLooseKg: 25, totalWeightQtl: 8.25, ratePerQtl: 7200, totalBuyerPayable: 8 * 7200 },
-    { billNumber: 'BILL-2026-0015', dateTime: '2026-09-24T16:30', buyerName: 'APMC Open Auction', lotId: 'T18', farmerId: 'f_baswaraj_devar', commodityId: 'comm_tr', soldBags: 3, residualLooseKg: 46, totalWeightQtl: 3.46, ratePerQtl: 7200, totalBuyerPayable: 3 * 7200 },
-    { billNumber: 'BILL-2026-0016', dateTime: '2026-09-24T17:00', buyerName: 'APMC Open Auction', lotId: 'T19', farmerId: 'f_kashappa_byader', commodityId: 'comm_tr', soldBags: 1, residualLooseKg: 23, totalWeightQtl: 1.23, ratePerQtl: 7200, totalBuyerPayable: 1 * 7200 }
+  // Official Sales Ledger (213 Kuntal Bags + 229 kg Residual Loose)
+  const INITIAL_SALES = [
+    { billNumber: 'BILL-2026-0001', dateTime: '2026-09-20T16:00', buyerId: 'buyer_mandi', lotId: 'U01', farmerId: 'f_smpatil', commodityId: 'comm_ud', soldBags: 11, residualLooseKg: 0, ratePerQtl: 7500, totalBuyerPayable: (11 * 100 * 7500) / 100 },
+    { billNumber: 'BILL-2026-0002', dateTime: '2026-09-22T15:30', buyerId: 'buyer_mandi', lotId: 'U02', farmerId: 'f_raju_mankar', commodityId: 'comm_ud', soldBags: 19, residualLooseKg: 7, ratePerQtl: 7500, totalBuyerPayable: (19 * 100 * 7500) / 100 },
+    { billNumber: 'BILL-2026-0003', dateTime: '2026-09-24T14:00', buyerId: 'buyer_mandi', lotId: 'U04', farmerId: 'f_smpatil', commodityId: 'comm_ud', soldBags: 17, residualLooseKg: 39, ratePerQtl: 7600, totalBuyerPayable: (17 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0004', dateTime: '2026-09-24T14:30', buyerId: 'buyer_mandi', lotId: 'U05', farmerId: 'f_smpatil', commodityId: 'comm_ud', soldBags: 63, residualLooseKg: 10, ratePerQtl: 7600, totalBuyerPayable: (63 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0005', dateTime: '2026-09-24T14:45', buyerId: 'buyer_mandi', lotId: 'U06', farmerId: 'f_anil_pujari', commodityId: 'comm_ud', soldBags: 20, residualLooseKg: 13, ratePerQtl: 7600, totalBuyerPayable: (20 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0006', dateTime: '2026-09-24T15:00', buyerId: 'buyer_mandi', lotId: 'U07', farmerId: 'f_devappa_k', commodityId: 'comm_ud', soldBags: 9, residualLooseKg: 5, ratePerQtl: 7600, totalBuyerPayable: (9 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0007', dateTime: '2026-09-24T15:15', buyerId: 'buyer_mandi', lotId: 'U08', farmerId: 'f_beerban_hola', commodityId: 'comm_ud', soldBags: 6, residualLooseKg: 1, ratePerQtl: 7600, totalBuyerPayable: (6 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0008', dateTime: '2026-09-24T15:30', buyerId: 'buyer_mandi', lotId: 'U09', farmerId: 'f_sharanu_post', commodityId: 'comm_ud', soldBags: 10, residualLooseKg: 3, ratePerQtl: 7600, totalBuyerPayable: (10 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0009', dateTime: '2026-09-24T15:45', buyerId: 'buyer_mandi', lotId: 'U10', farmerId: 'f_siddu_bamnalli', commodityId: 'comm_ud', soldBags: 4, residualLooseKg: 16, ratePerQtl: 7600, totalBuyerPayable: (4 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0010', dateTime: '2026-09-24T16:00', buyerId: 'buyer_mandi', lotId: 'U12', farmerId: 'f_chandamma_byader', commodityId: 'comm_ud', soldBags: 6, residualLooseKg: 2, ratePerQtl: 7600, totalBuyerPayable: (6 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0011', dateTime: '2026-09-24T16:15', buyerId: 'buyer_mandi', lotId: 'U13', farmerId: 'f_shankappa_malagi', commodityId: 'comm_ud', soldBags: 18, residualLooseKg: 18, ratePerQtl: 7600, totalBuyerPayable: (18 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0012', dateTime: '2026-09-24T16:30', buyerId: 'buyer_mandi', lotId: 'U14', farmerId: 'f_kalappa_madival', commodityId: 'comm_ud', soldBags: 11, residualLooseKg: 13, ratePerQtl: 7600, totalBuyerPayable: (11 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0013', dateTime: '2026-09-24T16:45', buyerId: 'buyer_mandi', lotId: 'U15', farmerId: 'f_jagadevi_patil', commodityId: 'comm_ud', soldBags: 7, residualLooseKg: 8, ratePerQtl: 7600, totalBuyerPayable: (7 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0014', dateTime: '2026-09-24T17:00', buyerId: 'buyer_mandi', lotId: 'U17', farmerId: 'f_nagappa_ambanna', commodityId: 'comm_ud', soldBags: 8, residualLooseKg: 25, ratePerQtl: 7600, totalBuyerPayable: (8 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0015', dateTime: '2026-09-24T17:15', buyerId: 'buyer_mandi', lotId: 'U18', farmerId: 'f_baswaraj_devar', commodityId: 'comm_ud', soldBags: 3, residualLooseKg: 46, ratePerQtl: 7600, totalBuyerPayable: (3 * 100 * 7600) / 100 },
+    { billNumber: 'BILL-2026-0016', dateTime: '2026-09-24T17:30', buyerId: 'buyer_mandi', lotId: 'U19', farmerId: 'f_kashappa_byader', commodityId: 'comm_ud', soldBags: 1, residualLooseKg: 23, ratePerQtl: 7600, totalBuyerPayable: (1 * 100 * 7600) / 100 }
   ];
 
   class MandiApp {
@@ -110,38 +123,26 @@
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (!parsed.outwardDispatches) parsed.outwardDispatches = [];
-          return parsed;
+          if (parsed && parsed.inwardLots && parsed.inwardLots.length > 0) {
+            if (!parsed.outwardDispatches) parsed.outwardDispatches = [];
+            return parsed;
+          }
         } catch (e) {
-          console.error('Failed to parse storage, restoring sheet state', e);
+          console.error('Failed to parse storage, loading defaults', e);
         }
       }
-      return this.getDefaultSheetState();
-    }
-
-    getDefaultSheetState() {
       return {
-        schemaVersion: 4,
-        inwardLots: JSON.parse(JSON.stringify(SHEET_INWARD_LOTS)),
+        schemaVersion: 3,
+        inwardLots: JSON.parse(JSON.stringify(INITIAL_INWARD_LOTS)),
         outwardDispatches: [],
-        sales: JSON.parse(JSON.stringify(SHEET_SALES)),
+        sales: JSON.parse(JSON.stringify(INITIAL_SALES)),
         masters: {
-          farmers: JSON.parse(JSON.stringify(SHEET_FARMERS)),
-          commodities: JSON.parse(JSON.stringify(SHEET_COMMODITIES)),
-          locations: JSON.parse(JSON.stringify(SHEET_LOCATIONS)),
-          buyers: []
+          farmers: JSON.parse(JSON.stringify(INITIAL_FARMERS)),
+          commodities: JSON.parse(JSON.stringify(STANDARD_APMC_COMMODITIES)),
+          locations: JSON.parse(JSON.stringify(INITIAL_LOCATIONS)),
+          buyers: JSON.parse(JSON.stringify(INITIAL_BUYERS))
         }
       };
-    }
-
-    resetToSheetData() {
-      if (confirm('Reload all 20 entries directly from the Neelahalli APMC Mandi spreadsheet?')) {
-        this.state = this.getDefaultSheetState();
-        this.saveState();
-        this.populateFilterDropdowns();
-        this.renderAll();
-        alert('Neelahalli Mandi sheet data successfully reloaded!');
-      }
     }
 
     saveState() {
@@ -198,7 +199,6 @@
       const user = userEl ? userEl.value.trim() : '';
       const pass = passEl ? passEl.value.trim() : '';
 
-      // Normalize username: compare case-insensitively with AUTH_CONFIG.username
       if (user.toUpperCase() === AUTH_CONFIG.username.toUpperCase() && pass === AUTH_CONFIG.password) {
         localStorage.setItem(AUTH_CONFIG.storageKey, 'true');
         this.isAuthenticated = true;
@@ -386,7 +386,7 @@
     openCommodityModal(isQuickAdd = false) {
       document.getElementById('form-master-commodity').reset();
       document.getElementById('commodity-edit-id').value = '';
-      document.getElementById('commodity-input-unit').value = '50';
+      document.getElementById('commodity-input-unit').value = '100';
       document.getElementById('modal-commodity-title').textContent = 'Add New Commodity';
       this.quickAddCallback = isQuickAdd ? 'commodity' : null;
       this.openModal('modal-commodity');
@@ -400,7 +400,7 @@
       document.getElementById('commodity-input-prefix').value = comm.prefix;
       document.getElementById('commodity-input-name').value = comm.name;
       document.getElementById('commodity-input-local').value = comm.localName || '';
-      document.getElementById('commodity-input-unit').value = comm.unitKg || 50;
+      document.getElementById('commodity-input-unit').value = comm.unitKg || 100;
       document.getElementById('modal-commodity-title').textContent = 'Edit Commodity';
       this.openModal('modal-commodity');
     }
@@ -412,7 +412,7 @@
       const prefix = document.getElementById('commodity-input-prefix').value.trim().toUpperCase();
       const name = document.getElementById('commodity-input-name').value.trim();
       const localName = document.getElementById('commodity-input-local').value.trim();
-      const unitKg = parseFloat(document.getElementById('commodity-input-unit').value) || 50;
+      const unitKg = parseFloat(document.getElementById('commodity-input-unit').value) || 100;
 
       const existingIndex = this.state.masters.commodities.findIndex(c => c.id === id);
       const commObj = { id, code, prefix, name, localName, unitKg };
@@ -443,11 +443,28 @@
     deleteCommodity(id) {
       const comm = this.state.masters.commodities.find(c => c.id === id);
       if (!comm) return;
+      const count = this.state.inwardLots.filter(l => l.commodityId === id).length;
+      if (count > 0 && !confirm(`Commodity "${comm.name}" has ${count} registered lot(s). Delete anyway?`)) {
+        return;
+      }
       this.state.masters.commodities = this.state.masters.commodities.filter(c => c.id !== id);
       this.saveState();
       this.populateFilterDropdowns();
       this.populateInwardDropdowns();
       this.renderAll();
+    }
+
+    populateDefaultAPMCCommodities() {
+      STANDARD_APMC_COMMODITIES.forEach(c => {
+        if (!this.state.masters.commodities.some(item => item.code === c.code)) {
+          this.state.masters.commodities.push({ ...c });
+        }
+      });
+      this.saveState();
+      this.populateFilterDropdowns();
+      this.populateInwardDropdowns();
+      this.renderMasterCommodities();
+      this.initLucide();
     }
 
     // Storage Locations
@@ -546,7 +563,14 @@
 
       this.saveState();
       this.closeModal('modal-buyer');
+      this.populateBuyerDropdown();
       this.renderMasterBuyers();
+
+      if (this.quickAddCallback === 'buyer') {
+        const select = document.getElementById('sale-buyer');
+        if (select) select.value = id;
+        this.quickAddCallback = null;
+      }
       this.initLucide();
     }
 
@@ -555,6 +579,7 @@
       if (!buyer) return;
       this.state.masters.buyers = this.state.masters.buyers.filter(b => b.id !== id);
       this.saveState();
+      this.populateBuyerDropdown();
       this.renderMasterBuyers();
     }
 
@@ -563,7 +588,7 @@
     // -------------------------------------------------------------
     getNextLotId(commodityId) {
       const comm = this.state.masters.commodities.find(c => c.id === commodityId);
-      const prefix = comm && comm.prefix ? comm.prefix : 'T';
+      const prefix = comm && comm.prefix ? comm.prefix : 'U';
       let maxNum = 0;
       this.state.inwardLots.forEach(lot => {
         if (lot.lotId && lot.lotId.startsWith(prefix)) {
@@ -576,7 +601,7 @@
 
     getNextBillNumber() {
       const year = new Date().getFullYear();
-      let maxSeq = 0;
+      let maxSeq = 16;
       this.state.sales.forEach(s => {
         const match = s.billNumber && s.billNumber.match(/BILL-\d+-(\d+)/);
         if (match) {
@@ -600,7 +625,6 @@
       return `OUT-${year}-${(maxSeq + 1).toString().padStart(4, '0')}`;
     }
 
-    // Stock availability per lot
     getLotOutwardBags(lotId) {
       return (this.state.outwardDispatches || [])
         .filter(o => o.lotId === lotId)
@@ -620,14 +644,14 @@
     populateFilterDropdowns() {
       const farmerSelect = document.getElementById('filter-farmer');
       const currentFarmer = farmerSelect.value;
-      farmerSelect.innerHTML = `<option value="">👤 All Farmers</option>` +
+      farmerSelect.innerHTML = `<option value="">👤 All Farmers (${this.state.masters.farmers.length})</option>` +
         this.state.masters.farmers.map(f => `<option value="${f.id}">${this.escape(f.name)} (${f.village || ''})</option>`).join('');
       farmerSelect.value = currentFarmer;
 
       const commSelect = document.getElementById('filter-commodity');
       const currentComm = commSelect.value;
       commSelect.innerHTML = `<option value="">🌾 All Commodities</option>` +
-        this.state.masters.commodities.map(c => `<option value="${c.id}">${this.escape(c.name)} (${c.code})</option>`).join('');
+        this.state.masters.commodities.map(c => `<option value="${c.id}">${this.escape(c.name)} (${c.localName || c.code})</option>`).join('');
       commSelect.value = currentComm;
 
       const locSelect = document.getElementById('filter-location');
@@ -640,15 +664,27 @@
     populateInwardDropdowns() {
       const farmerSelect = document.getElementById('inward-farmer');
       farmerSelect.innerHTML = `<option value="" disabled selected>-- Select Farmer --</option>` +
-        this.state.masters.farmers.map(f => `<option value="${f.id}">${this.escape(f.name)} [${f.village || 'Neelahalli'}]</option>`).join('');
+        this.state.masters.farmers.map(f => `<option value="${f.id}">${this.escape(f.name)} ${f.village ? `(${f.village})` : ''}</option>`).join('');
 
       const commSelect = document.getElementById('inward-commodity');
       commSelect.innerHTML = `<option value="" disabled selected>-- Select Commodity --</option>` +
-        this.state.masters.commodities.map(c => `<option value="${c.id}">${this.escape(c.name)} (${c.localName || c.code})</option>`).join('');
+        this.state.masters.commodities.map(c => `<option value="${c.id}">${this.escape(c.name)} [${c.localName || c.code}] - ${c.unitKg}kg</option>`).join('');
+      
+      // Default to Urad if available
+      const uradComm = this.state.masters.commodities.find(c => c.code === 'UD');
+      if (uradComm) commSelect.value = uradComm.id;
 
       const locSelect = document.getElementById('inward-location');
       locSelect.innerHTML = `<option value="" disabled selected>-- Select Location --</option>` +
         this.state.masters.locations.map(l => `<option value="${l.id}">${this.escape(l.name)}</option>`).join('');
+      if (this.state.masters.locations.length > 0) locSelect.value = this.state.masters.locations[0].id;
+    }
+
+    populateBuyerDropdown() {
+      const buyerSelect = document.getElementById('sale-buyer');
+      buyerSelect.innerHTML = `<option value="" disabled selected>-- Select Buyer --</option>` +
+        this.state.masters.buyers.map(b => `<option value="${b.id}">${this.escape(b.name)}</option>`).join('');
+      if (this.state.masters.buyers.length > 0) buyerSelect.value = this.state.masters.buyers[0].id;
     }
 
     updateInwardLotPreview() {
@@ -821,7 +857,7 @@
       const html = `
         <div class="text-center pb-3 border-b border-dashed border-slate-300">
           <h2 class="text-base font-extrabold text-amber-800">GTCO AGRO COMMODITY GODOWN</h2>
-          <p class="text-[11px] text-slate-500">APMC Market Yard - Neelahalli / Main Gate Store</p>
+          <p class="text-[11px] text-slate-500">APMC Market Yard - Main Gate Store & Godown</p>
           <div class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
             Official Outward Gate Pass / Delivery Challan
           </div>
@@ -833,7 +869,7 @@
           <div><strong class="text-slate-500">Source Lot ID:</strong> <span class="lot-badge">${outward.lotId}</span></div>
           <div class="text-right"><strong class="text-slate-500">Dispatch Purpose:</strong> <span class="font-bold">${outward.type}</span></div>
           <div><strong class="text-slate-500">Farmer:</strong> <span class="font-bold">${this.escape(farmer.name)}</span></div>
-          <div class="text-right"><strong class="text-slate-500">Commodity:</strong> ${this.escape(comm.name)}</div>
+          <div class="text-right"><strong class="text-slate-500">Commodity:</strong> ${this.escape(comm.name)} (${comm.localName || comm.code})</div>
           <div><strong class="text-slate-500">Dispatched To:</strong> <span class="font-bold text-slate-900">${this.escape(outward.receiver)}</span></div>
           <div class="text-right"><strong class="text-slate-500">Vehicle / Truck #:</strong> <span class="font-mono font-bold uppercase">${this.escape(outward.vehicleNo)}</span></div>
         </div>
@@ -841,7 +877,7 @@
         <div class="my-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
           <div class="text-[11px] font-bold text-amber-900 uppercase">Total Produce Dispatched</div>
           <div class="text-2xl font-extrabold text-amber-950 font-mono my-0.5">${outward.bags} Bags</div>
-          <div class="text-[11px] text-slate-600 font-semibold">${comm.name} • Mandi Packing</div>
+          <div class="text-[11px] text-slate-600 font-semibold">${comm.name} • Standard Mandi Packing</div>
         </div>
 
         ${outward.notes ? `<div class="p-2 rounded-lg bg-slate-100 text-[11px] text-slate-600"><strong>Driver/Notes:</strong> ${this.escape(outward.notes)}</div>` : ''}
@@ -861,14 +897,16 @@
     }
 
     // -------------------------------------------------------------
-    // WEIGHING & SALE CHECKOUT (KUNTAL BAG & KG BAG)
+    // WEIGHING & SALE CHECKOUT
     // -------------------------------------------------------------
     openWeighModal(lotId) {
       const lot = this.state.inwardLots.find(l => l.lotId === lotId);
       if (!lot) return;
 
       const farmer = this.state.masters.farmers.find(f => f.id === lot.farmerId) || { name: 'Unknown' };
-      const comm = this.state.masters.commodities.find(c => c.id === lot.commodityId) || { name: 'Unknown', unitKg: 50 };
+      const comm = this.state.masters.commodities.find(c => c.id === lot.commodityId) || { name: 'Unknown', unitKg: 100 };
+
+      this.populateBuyerDropdown();
 
       document.getElementById('sale-lot-id').value = lot.lotId;
       document.getElementById('sale-display-lot').textContent = lot.lotId;
@@ -876,32 +914,43 @@
       document.getElementById('sale-display-commodity').textContent = `${comm.name} (${comm.localName || comm.code})`;
       document.getElementById('sale-display-rawbags').textContent = `${lot.unweighedBags} bags`;
 
-      document.getElementById('sale-input-total-kg').value = lot.unweighedBags;
-      document.getElementById('sale-input-bags').value = Math.floor(lot.unweighedBags);
+      const unitKg = comm.unitKg || 100;
+      const estimatedBags = Math.floor(lot.unweighedBags);
+      document.getElementById('sale-input-total-kg').value = estimatedBags * unitKg;
+      document.getElementById('sale-input-bags').value = estimatedBags;
       document.getElementById('sale-input-loose').value = 0;
       document.getElementById('sale-bill-number').value = this.getNextBillNumber();
-      document.getElementById('sale-rate').value = 7200;
+      document.getElementById('sale-rate').value = 7600;
 
       this.updateSalePreviewCalculations();
       this.openModal('modal-sale');
     }
 
     handleScaleWeightChange() {
-      const val = parseFloat(document.getElementById('sale-input-total-kg').value);
-      if (!isNaN(val) && val >= 0) {
-        const kuntalBags = Math.floor(val);
-        const looseKg = Math.round((val - kuntalBags) * 100);
-        document.getElementById('sale-input-bags').value = kuntalBags;
-        document.getElementById('sale-input-loose').value = looseKg;
+      const lotId = document.getElementById('sale-lot-id').value;
+      const lot = this.state.inwardLots.find(l => l.lotId === lotId);
+      const comm = lot ? this.state.masters.commodities.find(c => c.id === lot.commodityId) : null;
+      const unitKg = comm && comm.unitKg ? comm.unitKg : 100;
+
+      const totalKg = parseFloat(document.getElementById('sale-input-total-kg').value);
+      if (!isNaN(totalKg) && totalKg >= 0) {
+        const wholeBags = Math.floor(totalKg / unitKg);
+        const loose = Math.round((totalKg % unitKg) * 100) / 100;
+        document.getElementById('sale-input-bags').value = wholeBags;
+        document.getElementById('sale-input-loose').value = loose;
       }
       this.updateSalePreviewCalculations();
     }
 
     handleBagOrLooseChange() {
+      const lotId = document.getElementById('sale-lot-id').value;
+      const lot = this.state.inwardLots.find(l => l.lotId === lotId);
+      const comm = lot ? this.state.masters.commodities.find(c => c.id === lot.commodityId) : null;
+      const unitKg = comm && comm.unitKg ? comm.unitKg : 100;
+
       const bags = parseInt(document.getElementById('sale-input-bags').value, 10) || 0;
       const loose = parseFloat(document.getElementById('sale-input-loose').value) || 0;
-      const totalNotation = bags + (loose / 100);
-      document.getElementById('sale-input-total-kg').value = totalNotation.toFixed(2);
+      document.getElementById('sale-input-total-kg').value = (bags * unitKg) + loose;
       this.updateSalePreviewCalculations();
     }
 
@@ -910,21 +959,26 @@
     }
 
     updateSalePreviewCalculations() {
+      const lotId = document.getElementById('sale-lot-id').value;
+      const lot = this.state.inwardLots.find(l => l.lotId === lotId);
+      const comm = lot ? this.state.masters.commodities.find(c => c.id === lot.commodityId) : null;
+      const unitKg = comm && comm.unitKg ? comm.unitKg : 100;
+
       const bags = parseInt(document.getElementById('sale-input-bags').value, 10) || 0;
       const loose = parseFloat(document.getElementById('sale-input-loose').value) || 0;
       const rate = parseFloat(document.getElementById('sale-rate').value) || 0;
 
-      const totalNetKg = (bags * 50) + loose;
-      const totalNotation = (bags + (loose / 100)).toFixed(2);
-      const buyerPayable = bags * rate; // whole 50kg Kuntal bags
+      const totalKg = (bags * unitKg) + loose;
+      const buyerTotalKg = bags * unitKg;
+      const buyerPayable = (buyerTotalKg * rate) / 100;
 
       document.getElementById('sale-live-calc-text').textContent =
-        `Yield: ${bags} Kuntal Bags (50kg each = ${bags * 50} kg) + ${loose} kg Loose = ${totalNetKg} kg Net (Sheet: ${totalNotation})`;
+        `Yield: ${bags} Whole Bags (${buyerTotalKg} kg) + ${loose} kg Loose = ${totalKg} kg Total Net Weighed (${(totalKg / 100).toFixed(2)} Qtl)`;
 
       document.getElementById('sale-buyer-amount').value =
         `₹ ${buyerPayable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      document.getElementById('preview-buyer-bags').textContent = `${bags} Bags (50kg)`;
+      document.getElementById('preview-buyer-bags').textContent = `${bags} Bags`;
       document.getElementById('preview-farmer-credit').textContent = `${bags} Bags + ${loose} kg`;
       document.getElementById('preview-shop-loose').textContent = `${loose} kg`;
     }
@@ -935,35 +989,33 @@
       const lot = this.state.inwardLots.find(l => l.lotId === lotId);
       if (!lot) return;
 
+      const comm = this.state.masters.commodities.find(c => c.id === lot.commodityId);
+      const unitKg = comm && comm.unitKg ? comm.unitKg : 100;
+
       const billNumber = document.getElementById('sale-bill-number').value.trim();
-      const buyerName = document.getElementById('sale-buyer-input').value.trim() || 'APMC Open Auction';
+      const buyerId = document.getElementById('sale-buyer').value;
       const soldBags = parseInt(document.getElementById('sale-input-bags').value, 10);
       const residualLooseKg = parseFloat(document.getElementById('sale-input-loose').value);
-      const ratePerQtl = parseFloat(document.getElementById('sale-rate').value) || 7200;
+      const ratePerQtl = parseFloat(document.getElementById('sale-rate').value) || 0;
 
-      if (!billNumber || isNaN(soldBags) || isNaN(residualLooseKg)) {
+      if (!billNumber || !buyerId || isNaN(soldBags) || isNaN(residualLooseKg)) {
         alert('Please complete all sale fields.');
         return;
       }
 
-      const totalWeightQtl = (soldBags + (residualLooseKg / 100)).toFixed(2);
-      const totalNetKg = (soldBags * 50) + residualLooseKg;
-      const totalBuyerPayable = soldBags * ratePerQtl;
+      const totalBuyerPayable = (soldBags * unitKg * ratePerQtl) / 100;
 
-      // Update lot status
       lot.status = 'Weighed & Sold';
 
       const saleRecord = {
         billNumber,
         dateTime: new Date().toISOString(),
-        buyerName,
+        buyerId,
         lotId,
         farmerId: lot.farmerId,
         commodityId: lot.commodityId,
         soldBags,
         residualLooseKg,
-        totalWeightQtl,
-        totalNetKg,
         ratePerQtl,
         totalBuyerPayable
       };
@@ -977,26 +1029,27 @@
 
     showInvoiceSlip(sale) {
       const farmer = this.state.masters.farmers.find(f => f.id === sale.farmerId) || { name: 'Unknown' };
-      const comm = this.state.masters.commodities.find(c => c.id === sale.commodityId) || { name: 'Unknown', unitKg: 50 };
-      const totalNetKg = sale.totalNetKg || ((sale.soldBags * 50) + sale.residualLooseKg);
-      const sheetNotation = sale.totalWeightQtl || (sale.soldBags + (sale.residualLooseKg / 100)).toFixed(2);
+      const buyer = this.state.masters.buyers.find(b => b.id === sale.buyerId) || { name: 'Unknown' };
+      const comm = this.state.masters.commodities.find(c => c.id === sale.commodityId) || { name: 'Unknown', unitKg: 100 };
+      const unitKg = comm.unitKg || 100;
+      const totalKg = (sale.soldBags * unitKg) + sale.residualLooseKg;
 
       const html = `
         <div class="text-center pb-3 border-b border-dashed border-slate-300">
           <h2 class="text-base font-extrabold text-brand-800">GTCO AGRO COMMODITY TRADING CO.</h2>
-          <p class="text-[11px] text-slate-500">APMC Commission Agent / Arhatiya - Neelahalli Mandi</p>
+          <p class="text-[11px] text-slate-500">APMC Commission Agent / Arhatiya - Shop No. 14</p>
           <div class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-800">
-            Sauda Chitthi / APMC Commercial Sale Slip (50kg Bag Standard)
+            Sauda Chitthi / APMC Commercial Sale Slip
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2 text-[11px]">
           <div><strong class="text-slate-500">Bill Number:</strong> <span class="font-mono font-bold">${sale.billNumber}</span></div>
           <div class="text-right"><strong class="text-slate-500">Date:</strong> ${this.formatDateTime(sale.dateTime)}</div>
-          <div><strong class="text-slate-500">Farmer:</strong> <span class="font-bold">${this.escape(farmer.name)} (${farmer.village || 'Neelahalli'})</span></div>
+          <div><strong class="text-slate-500">Buyer:</strong> <span class="font-bold">${this.escape(buyer.name)}</span></div>
           <div class="text-right"><strong class="text-slate-500">Lot ID:</strong> <span class="lot-badge">${sale.lotId}</span></div>
-          <div><strong class="text-slate-500">Commodity:</strong> ${this.escape(comm.name)} (50kg Bag)</div>
-          <div class="text-right"><strong class="text-slate-500">Buyer:</strong> ${this.escape(sale.buyerName || 'APMC Auction')}</div>
+          <div><strong class="text-slate-500">Farmer Credited:</strong> <span class="font-bold">${this.escape(farmer.name)}</span> (${farmer.village || ''})</div>
+          <div class="text-right"><strong class="text-slate-500">Commodity:</strong> ${this.escape(comm.name)} (${comm.localName || comm.code})</div>
         </div>
 
         <table class="w-full text-left border-collapse text-[11px] my-2">
@@ -1004,30 +1057,30 @@
             <tr class="bg-slate-100 border-b border-slate-200 font-bold text-slate-700">
               <th class="p-1.5">Description</th>
               <th class="p-1.5 text-right">Standard Qty</th>
-              <th class="p-1.5 text-right">Net Weight</th>
-              <th class="p-1.5 text-right">Rate / 50kg Bag</th>
+              <th class="p-1.5 text-right">Weight</th>
+              <th class="p-1.5 text-right">Rate/Qtl</th>
               <th class="p-1.5 text-right">Buyer Payable</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr>
-              <td class="p-1.5 font-bold">Kuntal Bags Sold (50kg)</td>
+              <td class="p-1.5 font-bold">Standard Whole Bags</td>
               <td class="p-1.5 text-right font-bold">${sale.soldBags} Bags</td>
-              <td class="p-1.5 text-right font-mono">${sale.soldBags * 50} kg</td>
-              <td class="p-1.5 text-right">₹ ${sale.ratePerQtl || 7200}</td>
+              <td class="p-1.5 text-right font-mono">${sale.soldBags * unitKg} kg</td>
+              <td class="p-1.5 text-right">₹ ${sale.ratePerQtl}</td>
               <td class="p-1.5 text-right font-mono font-bold text-brand-700">₹ ${(sale.totalBuyerPayable || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
             </tr>
             <tr class="bg-amber-50 text-amber-900">
               <td class="p-1.5 font-bold">Residual Loose Stock</td>
-              <td class="p-1.5 text-right">Unsold</td>
+              <td class="p-1.5 text-right">Excluded</td>
               <td class="p-1.5 text-right font-mono font-bold">${sale.residualLooseKg} kg</td>
               <td class="p-1.5 text-right">--</td>
-              <td class="p-1.5 text-right font-bold">Shop Loose Ledger</td>
+              <td class="p-1.5 text-right font-bold">Credited to Farmer Loose Ledger</td>
             </tr>
             <tr class="border-t-2 border-slate-900 font-bold bg-slate-100">
-              <td class="p-1.5">Total Weighed Yield</td>
+              <td class="p-1.5">Total Lot Yield</td>
               <td class="p-1.5 text-right">${sale.soldBags} Bags + ${sale.residualLooseKg} kg</td>
-              <td class="p-1.5 text-right font-mono">${totalNetKg} kg (${sheetNotation})</td>
+              <td class="p-1.5 text-right font-mono">${totalKg} kg (${(totalKg / 100).toFixed(2)} Qtl)</td>
               <td class="p-1.5 text-right">Net Buyer</td>
               <td class="p-1.5 text-right font-mono text-brand-800 text-xs">₹ ${(sale.totalBuyerPayable || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
             </tr>
@@ -1035,7 +1088,7 @@
         </table>
 
         <div class="p-2 rounded-xl bg-slate-100 text-[10px] text-slate-600 leading-tight">
-          <strong>Settlement Notice:</strong> Buyer invoice is generated strictly for whole 50kg Kuntal bag units.
+          <strong>Settlement Audit:</strong> Buyer billed strictly for standardized units.
           Residual loose (${sale.residualLooseKg} kg) is deposited into Shop Loose Inventory and credited to
           <strong>${this.escape(farmer.name)}</strong>'s ledger account.
         </div>
@@ -1103,8 +1156,10 @@
           const locName = loc ? loc.name.toLowerCase() : '';
           extraMatch = locName.includes(f.text);
         } else if (type === 'sale') {
+          const buyer = this.state.masters.buyers.find(it => it.id === item.buyerId);
+          const buyerName = buyer ? buyer.name.toLowerCase() : '';
           const billNo = (item.billNumber || '').toLowerCase();
-          extraMatch = billNo.includes(f.text);
+          extraMatch = buyerName.includes(f.text) || billNo.includes(f.text);
         } else if (type === 'outward') {
           const gatePass = (item.gatePassNo || '').toLowerCase();
           const vehicle = (item.vehicleNo || '').toLowerCase();
@@ -1137,45 +1192,43 @@
 
     renderKPIs() {
       const filteredLots = this.state.inwardLots.filter(l => this.matchesFilter(l, 'lot'));
+      const filteredOutwards = (this.state.outwardDispatches || []).filter(o => this.matchesFilter(o, 'outward'));
       const filteredSales = this.state.sales.filter(s => this.matchesFilter(s, 'sale'));
 
-      // Total Unweighed Bags Inward
       let totalInwardBags = 0;
-      let unsoldBags = 0;
       filteredLots.forEach(l => {
         totalInwardBags += l.unweighedBags;
-        if (l.status === 'Stored (Unweighed)') {
-          unsoldBags += l.unweighedBags;
-        }
       });
 
-      // Total Sold Kuntal Bags
-      let totalKuntalBags = 0;
-      let totalLooseKg = 0;
+      let totalOutwardBags = 0;
+      filteredOutwards.forEach(o => {
+        totalOutwardBags += (parseFloat(o.bags) || 0);
+      });
+
+      const godownBalance = Math.max(0, totalInwardBags - totalOutwardBags);
+
+      let residualLoose = 0;
+      const farmersWithLoose = new Set();
       filteredSales.forEach(s => {
-        totalKuntalBags += s.soldBags;
-        totalLooseKg += s.residualLooseKg;
+        residualLoose += s.residualLooseKg;
+        if (s.residualLooseKg > 0) farmersWithLoose.add(s.farmerId);
       });
 
       document.getElementById('kpi-inward-bags').textContent = totalInwardBags;
-      document.getElementById('kpi-inward-lots-sub').textContent = `${filteredLots.length} farmer lots received`;
+      document.getElementById('kpi-inward-lots-sub').textContent = `${filteredLots.length} lot(s) received`;
 
-      document.getElementById('kpi-kuntal-bags').textContent = totalKuntalBags;
-      document.getElementById('kpi-sold-lots-sub').textContent = `${filteredSales.length} lots settled & sold`;
+      document.getElementById('kpi-outward-bags').textContent = totalOutwardBags;
+      document.getElementById('kpi-outward-trips-sub').textContent = `${filteredOutwards.length} dispatch trip(s)`;
 
-      document.getElementById('kpi-loose-kg').textContent = totalLooseKg;
-      document.getElementById('kpi-unsold-bags').textContent = unsoldBags;
+      document.getElementById('kpi-balance-bags').textContent = godownBalance;
 
-      const looseSub = document.getElementById('kpi-loose-sub');
-      if (looseSub) {
-        const eq50kg = Math.floor(totalLooseKg / 50);
-        const remKg = totalLooseKg % 50;
-        looseSub.textContent = `${eq50kg} Convertible 50kg Bags + ${remKg} kg`;
-      }
+      document.getElementById('kpi-loose-kg').textContent = residualLoose.toFixed(0);
+      document.getElementById('kpi-loose-farmers-sub').textContent = `${farmersWithLoose.size} farmer ledger(s) (2 Qtl + 29 kg)`;
 
       document.getElementById('badge-inward-count').textContent = this.state.inwardLots.length;
       document.getElementById('badge-outward-count').textContent = (this.state.outwardDispatches || []).length;
       document.getElementById('badge-sales-count').textContent = this.state.sales.length;
+      document.getElementById('badge-loose-count').textContent = farmersWithLoose.size;
 
       document.getElementById('badge-master-farmers').textContent = this.state.masters.farmers.length;
       document.getElementById('badge-master-commodities').textContent = this.state.masters.commodities.length;
@@ -1188,58 +1241,48 @@
       const filtered = this.state.inwardLots.filter(l => this.matchesFilter(l, 'lot'));
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="13" class="text-center py-10 text-slate-400">
-              <div class="flex flex-col items-center justify-center gap-2">
-                <i data-lucide="package-open" class="w-8 h-8 text-slate-300"></i>
-                <p class="font-semibold text-xs">No matching inward lots found.</p>
-              </div>
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-slate-400">No matching inward lots found.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(lot => {
-        const farmer = this.state.masters.farmers.find(f => f.id === lot.farmerId) || { name: 'Unknown', village: 'NEELAHALLI' };
-        const loc = this.state.masters.locations.find(l => l.id === lot.locationId) || { name: 'BAY A' };
-        const sale = this.state.sales.find(s => s.lotId === lot.lotId);
-
+        const farmer = this.state.masters.farmers.find(f => f.id === lot.farmerId) || { name: 'Unknown', village: '' };
+        const comm = this.state.masters.commodities.find(c => c.id === lot.commodityId) || { name: 'Unknown', localName: '' };
+        const loc = this.state.masters.locations.find(l => l.id === lot.locationId) || { name: 'Unknown' };
         const isUnweighed = lot.status === 'Stored (Unweighed)';
-        const kuntalBag = sale ? sale.soldBags : '--';
-        const kgBag = sale ? (sale.residualLooseKg > 0 ? sale.residualLooseKg : '0') : '--';
-        const totalWeight = sale ? (sale.totalWeightQtl ? sale.totalWeightQtl : (sale.soldBags + (sale.residualLooseKg/100)).toFixed(2)) : '--';
-        const soldWeight = sale ? sale.soldBags : '--';
-        const unsoldWeight = sale ? (sale.residualLooseKg > 0 ? (sale.residualLooseKg / 100).toFixed(2) : '0') : '--';
+
+        const outwardBags = this.getLotOutwardBags(lot.lotId);
+        const inStockBags = Math.max(0, lot.unweighedBags - outwardBags);
 
         return `
-          <tr class="hover:bg-slate-50/80 transition text-xs">
-            <td class="py-3 px-3 text-slate-600 font-mono">${lot.arrivalDateTime.slice(0, 10)}</td>
-            <td class="py-3 px-3"><span class="lot-badge">${lot.lotId}</span></td>
-            <td class="py-3 px-3 font-bold text-slate-900">${this.escape(farmer.name)}</td>
-            <td class="py-3 px-3 text-slate-600">${this.escape(farmer.village || 'NEELAHALLI')}</td>
-            <td class="py-3 px-3 text-center font-bold font-mono text-slate-900">${lot.unweighedBags}</td>
-            <td class="py-3 px-3 text-center font-mono font-bold text-blue-700">${kuntalBag}</td>
-            <td class="py-3 px-3 text-center font-mono text-amber-800">${kgBag !== '--' && kgBag > 0 ? `<span class="loose-badge">${kgBag} kg</span>` : kgBag}</td>
-            <td class="py-3 px-3 text-right font-mono font-bold text-slate-900">${totalWeight}</td>
-            <td class="py-3 px-3 text-right font-mono text-emerald-700 font-bold">${soldWeight}</td>
-            <td class="py-3 px-3 text-right font-mono text-slate-600">${unsoldWeight}</td>
-            <td class="py-3 px-3 text-slate-700 font-semibold">${this.escape(loc.name)}</td>
-            <td class="py-3 px-3 text-center">
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 px-4"><span class="lot-badge">${lot.lotId}</span></td>
+            <td class="py-3 px-4 text-slate-600">${this.formatDate(lot.arrivalDateTime)}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">${this.escape(farmer.name)} <span class="text-slate-400 text-xs font-normal">(${farmer.village})</span></td>
+            <td class="py-3 px-4 font-semibold text-slate-800">${this.escape(comm.name)} <span class="text-slate-400 text-xs">(${comm.localName || ''})</span></td>
+            <td class="py-3 px-4 text-center font-bold font-mono text-slate-800">${lot.unweighedBags}</td>
+            <td class="py-3 px-4 text-center font-bold font-mono text-amber-700">${outwardBags > 0 ? outwardBags : 0}</td>
+            <td class="py-3 px-4 text-center font-extrabold font-mono text-blue-700">${inStockBags}</td>
+            <td class="py-3 px-4 text-slate-600">${this.escape(loc.name)}</td>
+            <td class="py-3 px-4 text-center">
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isUnweighed ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                ${isUnweighed ? 'Unsold' : 'Sold'}
+                ${lot.status}
               </span>
             </td>
-            <td class="py-3 px-3 text-right space-x-1">
+            <td class="py-3 px-4 text-right space-x-1">
+              ${inStockBags > 0 ? `
+                <button onclick="app.openNewOutwardModal('${lot.lotId}')" title="Dispatch Outward" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition">
+                  <i data-lucide="truck" class="w-3 h-3"></i> Outward
+                </button>
+              ` : ''}
               ${isUnweighed ? `
                 <button onclick="app.openWeighModal('${lot.lotId}')" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">
                   <i data-lucide="scale" class="w-3 h-3"></i> Weigh & Sell
                 </button>
               ` : `
-                <button onclick="app.showInvoiceSlipByBill('${sale.billNumber}')" class="px-2 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition">
-                  Slip
-                </button>
+                <span class="text-emerald-700 font-bold text-xs inline-flex items-center gap-1">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i> Settled
+                </span>
               `}
             </td>
           </tr>
@@ -1271,9 +1314,9 @@
         const comm = this.state.masters.commodities.find(c => c.id === o.commodityId) || { name: 'Unknown' };
 
         return `
-          <tr class="hover:bg-slate-50/80 transition text-xs">
+          <tr class="hover:bg-slate-50/80 transition">
             <td class="py-3 px-4 font-mono font-bold text-amber-800">${o.gatePassNo}</td>
-            <td class="py-3 px-4 text-slate-600">${this.formatDateTime(o.dateTime)}</td>
+            <td class="py-3 px-4 text-slate-600 text-xs">${this.formatDateTime(o.dateTime)}</td>
             <td class="py-3 px-4"><span class="lot-badge">${o.lotId}</span></td>
             <td class="py-3 px-4">${this.escape(comm.name)}</td>
             <td class="py-3 px-4 font-bold text-slate-900">${this.escape(farmer.name)}</td>
@@ -1300,33 +1343,27 @@
       const filtered = this.state.sales.filter(s => this.matchesFilter(s, 'sale'));
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="9" class="text-center py-10 text-slate-400">
-              <div class="flex flex-col items-center justify-center gap-2">
-                <i data-lucide="scale" class="w-8 h-8 text-slate-300"></i>
-                <p class="font-semibold text-xs">No commercial sales bills found.</p>
-              </div>
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-400">No commercial sales bills recorded.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(s => {
-        const farmer = this.state.masters.farmers.find(f => f.id === s.farmerId) || { name: 'Unknown', village: 'NEELAHALLI' };
-        const totalWeight = s.totalWeightQtl ? s.totalWeightQtl : (s.soldBags + (s.residualLooseKg / 100)).toFixed(2);
+        const farmer = this.state.masters.farmers.find(f => f.id === s.farmerId) || { name: 'Unknown', village: '' };
+        const buyer = this.state.masters.buyers.find(b => b.id === s.buyerId) || { name: 'Unknown' };
+        const comm = this.state.masters.commodities.find(c => c.id === s.commodityId) || { name: 'Unknown', unitKg: 100 };
+        const unitKg = comm.unitKg || 100;
+        const totalNetWeight = (s.soldBags * unitKg) + s.residualLooseKg;
 
         return `
-          <tr class="hover:bg-slate-50/80 transition text-xs">
+          <tr class="hover:bg-slate-50/80 transition">
             <td class="py-3 px-4 font-mono font-bold text-blue-700">${s.billNumber}</td>
-            <td class="py-3 px-4 text-slate-600">${s.dateTime.slice(0, 10)}</td>
-            <td class="py-3 px-4 font-bold text-slate-900">${this.escape(farmer.name)}</td>
-            <td class="py-3 px-4 text-slate-600">${this.escape(farmer.village || 'NEELAHALLI')}</td>
+            <td class="py-3 px-4 text-slate-600 text-xs">${this.formatDate(s.dateTime)}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">${this.escape(buyer.name)}</td>
             <td class="py-3 px-4"><span class="lot-badge">${s.lotId}</span></td>
-            <td class="py-3 px-4 text-center font-bold font-mono text-blue-700 text-sm">${s.soldBags} Bags</td>
-            <td class="py-3 px-4 text-center"><span class="loose-badge">+ ${s.residualLooseKg} kg</span></td>
-            <td class="py-3 px-4 text-right font-mono font-bold text-slate-900">${(s.soldBags * 50) + s.residualLooseKg} kg <span class="text-xs text-slate-500 font-normal">(${totalWeight})</span></td>
+            <td class="py-3 px-4 font-semibold text-slate-800">${this.escape(comm.name)}</td>
+            <td class="py-3 px-4 font-bold font-mono text-emerald-800">${s.soldBags} Bags (${s.soldBags} Qtl)</td>
+            <td class="py-3 px-4"><span class="loose-badge">${s.residualLooseKg > 0 ? `+ ${s.residualLooseKg} kg loose` : '0 kg'}</span></td>
+            <td class="py-3 px-4 font-bold text-slate-900">${this.escape(farmer.name)} <span class="text-slate-400 text-xs font-normal">(${farmer.village})</span></td>
             <td class="py-3 px-4 text-right">
               <button onclick='app.showInvoiceSlipByBill("${s.billNumber}")' class="px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition inline-flex items-center gap-1">
                 <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Slip
@@ -1347,14 +1384,17 @@
       const summaryBody = document.getElementById('loose-summary-body');
       const auditBody = document.getElementById('loose-audit-body');
 
-      // Aggregate loose per farmer
       const looseMap = {};
+      let totalLooseAccumulated = 0;
+
       filteredSales.forEach(s => {
         if (s.residualLooseKg > 0) {
-          const key = s.farmerId;
+          totalLooseAccumulated += s.residualLooseKg;
+          const key = `${s.farmerId}___${s.commodityId}`;
           if (!looseMap[key]) {
             looseMap[key] = {
               farmerId: s.farmerId,
+              commodityId: s.commodityId,
               totalKg: 0
             };
           }
@@ -1362,22 +1402,33 @@
         }
       });
 
-      const entries = Object.values(looseMap).sort((a, b) => b.totalKg - a.totalKg);
+      const entries = Object.values(looseMap);
       if (entries.length === 0) {
         summaryBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400 text-xs">No loose balances recorded.</td></tr>`;
       } else {
-        summaryBody.innerHTML = entries.map(item => {
-          const farmer = this.state.masters.farmers.find(f => f.id === item.farmerId) || { name: 'Unknown', village: 'NEELAHALLI' };
-          const eqBags = Math.floor(item.totalKg / 50);
-          const remainder = item.totalKg % 50;
+        const convertibleQtlBags = Math.floor(totalLooseAccumulated / 100);
+        const remLooseKg = totalLooseAccumulated % 100;
+
+        summaryBody.innerHTML = `
+          <tr class="bg-amber-100/60 font-bold text-amber-950 border-b-2 border-amber-300">
+            <td colspan="2" class="py-2 px-4 uppercase text-[11px] tracking-wider">Total Loose Stock (Mandate Summary)</td>
+            <td class="py-2 px-4 text-right font-mono text-amber-900">${totalLooseAccumulated} kg</td>
+            <td class="py-2 px-4 text-right font-mono text-emerald-800">${convertibleQtlBags} Bags (Qtl)</td>
+            <td class="py-2 px-4 text-right font-mono text-rose-800">${remLooseKg} kg Remaining</td>
+          </tr>
+        ` + entries.map(item => {
+          const farmer = this.state.masters.farmers.find(f => f.id === item.farmerId) || { name: 'Unknown', village: '' };
+          const comm = this.state.masters.commodities.find(c => c.id === item.commodityId) || { name: 'Unknown' };
+          const eqBags = Math.floor(item.totalKg / 100);
+          const remainder = Math.round((item.totalKg % 100) * 100) / 100;
 
           return `
-            <tr class="hover:bg-slate-50 text-xs">
-              <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(farmer.name)}</td>
-              <td class="py-2.5 px-4 text-slate-600">${this.escape(farmer.village || 'NEELAHALLI')}</td>
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(farmer.name)} <span class="text-slate-400 text-xs font-normal">(${farmer.village})</span></td>
+              <td class="py-2.5 px-4">${this.escape(comm.name)}</td>
               <td class="py-2.5 px-4 text-right"><span class="loose-badge">${item.totalKg} kg</span></td>
-              <td class="py-2.5 px-4 text-right font-mono font-bold">${eqBags > 0 ? `${eqBags} Bags (50kg)` : '0 Bags'}</td>
-              <td class="py-2.5 px-4 text-right text-slate-500 font-mono">${remainder} kg</td>
+              <td class="py-2.5 px-4 text-right font-mono font-bold text-emerald-700">${eqBags > 0 ? `${eqBags} Bag (100kg)` : '0 Bags'}</td>
+              <td class="py-2.5 px-4 text-right text-slate-600 font-mono font-bold">${remainder} kg</td>
             </tr>
           `;
         }).join('');
@@ -1395,13 +1446,11 @@
               <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(farmer.name)}</td>
               <td class="py-2.5 px-4"><span class="lot-badge">${s.lotId}</span></td>
               <td class="py-2.5 px-4 text-right font-bold text-rose-700">+ ${s.residualLooseKg} kg</td>
-              <td class="py-2.5 px-4 text-slate-600">Shop Loose Bin</td>
+              <td class="py-2.5 px-4 text-slate-600">Deposited to Shop Bin</td>
             </tr>
           `;
         }).join('');
       }
-
-      document.getElementById('badge-loose-count').textContent = entries.length;
     }
 
     renderMasterFarmers() {
@@ -1411,10 +1460,10 @@
         return;
       }
       tbody.innerHTML = this.state.masters.farmers.map(f => `
-        <tr class="hover:bg-slate-50 text-xs">
+        <tr class="hover:bg-slate-50">
           <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(f.name)}</td>
           <td class="py-2.5 px-4 text-slate-600">${this.escape(f.mobile || '--')}</td>
-          <td class="py-2.5 px-4 text-slate-600 font-semibold">${this.escape(f.village || 'NEELAHALLI')}</td>
+          <td class="py-2.5 px-4 font-semibold text-blue-700">${this.escape(f.village || '--')}</td>
           <td class="py-2.5 px-4 text-slate-500 text-xs">${this.escape(f.notes || '--')}</td>
           <td class="py-2.5 px-4 text-right space-x-1">
             <button onclick="app.editFarmer('${f.id}')" class="p-1 text-slate-600 hover:text-brand-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
@@ -1431,7 +1480,7 @@
         return;
       }
       tbody.innerHTML = this.state.masters.commodities.map(c => `
-        <tr class="hover:bg-slate-50 text-xs">
+        <tr class="hover:bg-slate-50">
           <td class="py-2.5 px-4 font-mono font-bold text-slate-900">${c.code}</td>
           <td class="py-2.5 px-4 font-bold">${this.escape(c.name)}</td>
           <td class="py-2.5 px-4 text-slate-600">${this.escape(c.localName || '--')}</td>
@@ -1452,7 +1501,7 @@
         return;
       }
       tbody.innerHTML = this.state.masters.locations.map(l => `
-        <tr class="hover:bg-slate-50 text-xs">
+        <tr class="hover:bg-slate-50">
           <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(l.name)}</td>
           <td class="py-2.5 px-4 text-slate-600 text-xs">${this.escape(l.desc || '--')}</td>
           <td class="py-2.5 px-4 text-right space-x-1">
@@ -1470,7 +1519,7 @@
         return;
       }
       tbody.innerHTML = this.state.masters.buyers.map(b => `
-        <tr class="hover:bg-slate-50 text-xs">
+        <tr class="hover:bg-slate-50">
           <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(b.name)}</td>
           <td class="py-2.5 px-4 text-slate-600">${this.escape(b.contact || '--')}</td>
           <td class="py-2.5 px-4 text-slate-600 text-xs">${this.escape(b.license || '--')}</td>
@@ -1493,51 +1542,32 @@
 
       const wb = XLSX.utils.book_new();
 
-      // Sheet 1: Inward Produce matching user's CSV format
+      // Sheet 1: Inward Lots
       const inwardRows = this.state.inwardLots.map(l => {
-        const farmer = this.state.masters.farmers.find(f => f.id === l.farmerId) || { name: 'Unknown', village: 'NEELAHALLI' };
-        const loc = this.state.masters.locations.find(item => item.id === l.locationId) || { name: 'BAY A' };
-        const sale = this.state.sales.find(s => s.lotId === l.lotId);
+        const farmer = this.state.masters.farmers.find(f => f.id === l.farmerId) || { name: 'Unknown', village: '' };
+        const comm = this.state.masters.commodities.find(c => c.id === l.commodityId) || { name: 'Unknown' };
+        const loc = this.state.masters.locations.find(item => item.id === l.locationId) || { name: 'Unknown' };
+        const outwardBags = this.getLotOutwardBags(l.lotId);
+        const inStock = Math.max(0, l.unweighedBags - outwardBags);
         return {
-          'Date': l.arrivalDateTime.slice(0, 10),
-          'Agriculturist / Farmer Name': farmer.name,
-          'Village': farmer.village || 'NEELAHALLI',
-          'Unweighed Bags Inward': l.unweighedBags,
-          'KUNTAL BAG (50kg)': sale ? sale.soldBags : '',
-          'KG BAG (Loose kg)': sale ? sale.residualLooseKg : '',
-          'TOTAL WEIGHT': sale ? (sale.totalWeightQtl || (sale.soldBags + sale.residualLooseKg/100)) : '',
-          'Sold Weight (50kg Bags)': sale ? sale.soldBags : '',
-          'BILL NO': sale ? sale.billNumber : '',
-          'UN SOLD WEIGHT': sale ? (sale.residualLooseKg > 0 ? (sale.residualLooseKg / 100).toFixed(2) : 0) : '',
-          'PRODUCT AT': loc.name
+          'Lot ID': l.lotId,
+          'Arrival Date': l.arrivalDateTime,
+          'Farmer': farmer.name,
+          'Village': farmer.village,
+          'Commodity': comm.name,
+          'Inward Raw Bags': l.unweighedBags,
+          'Dispatched Out Bags': outwardBags,
+          'In Godown Stock': inStock,
+          'Location': loc.name,
+          'Status': l.status
         };
       });
       const wsInward = XLSX.utils.json_to_sheet(inwardRows);
-      XLSX.utils.book_append_sheet(wb, wsInward, 'Mandi_Inward_Sales');
+      XLSX.utils.book_append_sheet(wb, wsInward, 'Inward_Produce');
 
-      // Sheet 2: Loose Stock consolidation
-      const looseRows = Object.values(
-        this.state.sales.filter(s => s.residualLooseKg > 0).reduce((acc, s) => {
-          if (!acc[s.farmerId]) acc[s.farmerId] = { farmerId: s.farmerId, looseKg: 0 };
-          acc[s.farmerId].looseKg += s.residualLooseKg;
-          return acc;
-        }, {})
-      ).map(item => {
-        const farmer = this.state.masters.farmers.find(f => f.id === item.farmerId) || { name: 'Unknown', village: 'NEELAHALLI' };
-        return {
-          'Farmer Name': farmer.name,
-          'Village': farmer.village,
-          'Total Loose Stock (kg)': item.looseKg,
-          'Convertible 50kg Bags': Math.floor(item.looseKg / 50),
-          'Remaining Loose (kg)': item.looseKg % 50
-        };
-      });
-      const wsLoose = XLSX.utils.json_to_sheet(looseRows);
-      XLSX.utils.book_append_sheet(wb, wsLoose, 'Loose_Stock_Ledger');
-
-      // Sheet 3: Outward Dispatches
+      // Sheet 2: Outward Dispatches
       const outwardRows = (this.state.outwardDispatches || []).map(o => {
-        const farmer = this.state.masters.farmers.find(f => f.id === o.farmerId) || { name: 'Unknown' };
+        const farmer = this.state.masters.farmers.find(f => f.id === o.farmerId) || { name: 'Unknown', village: '' };
         const comm = this.state.masters.commodities.find(c => c.id === o.commodityId) || { name: 'Unknown' };
         return {
           'Gate Pass #': o.gatePassNo,
@@ -1549,23 +1579,57 @@
           'Purpose': o.type,
           'Consignee / Receiver': o.receiver,
           'Vehicle #': o.vehicleNo,
-          'Driver / Notes': o.notes
+          'Notes': o.notes
         };
       });
-      const wsOutward = XLSX.utils.json_to_sheet(outwardRows.length ? outwardRows : [{ Info: 'No outward dispatches yet' }]);
+      const wsOutward = XLSX.utils.json_to_sheet(outwardRows.length ? outwardRows : [{ Info: 'No outward dispatches' }]);
       XLSX.utils.book_append_sheet(wb, wsOutward, 'Outward_Dispatches');
 
-      // Sheet 4: Farmers Directory
+      // Sheet 3: Sales Ledger
+      const salesRows = this.state.sales.map(s => {
+        const farmer = this.state.masters.farmers.find(f => f.id === s.farmerId) || { name: 'Unknown', village: '' };
+        const buyer = this.state.masters.buyers.find(b => b.id === s.buyerId) || { name: 'Unknown' };
+        const comm = this.state.masters.commodities.find(c => c.id === s.commodityId) || { name: 'Unknown' };
+        return {
+          'Bill Number': s.billNumber,
+          'Date': s.dateTime,
+          'Buyer': buyer.name,
+          'Lot ID': s.lotId,
+          'Commodity': comm.name,
+          'Sold Kuntal Bags': s.soldBags,
+          'Residual Loose (kg)': s.residualLooseKg,
+          'Total Net Weight (Qtl)': (s.soldBags + (s.residualLooseKg / 100)).toFixed(2),
+          'Farmer Credited': farmer.name,
+          'Village': farmer.village,
+          'Rate / Quintal': s.ratePerQtl,
+          'Buyer Payable ₹': s.totalBuyerPayable
+        };
+      });
+      const wsSales = XLSX.utils.json_to_sheet(salesRows);
+      XLSX.utils.book_append_sheet(wb, wsSales, 'Sales_Audit_Ledger');
+
+      // Sheet 4: Farmers Master
       const wsFarmers = XLSX.utils.json_to_sheet(this.state.masters.farmers);
-      XLSX.utils.book_append_sheet(wb, wsFarmers, 'Farmers_Directory');
+      XLSX.utils.book_append_sheet(wb, wsFarmers, 'Master_Farmers');
 
       const dateStr = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(wb, `Neelahalli_APMC_Mandi_Ledger_${dateStr}.xlsx`);
+      XLSX.writeFile(wb, `GTCO_Stock_Tracker_Urad_Ledger_${dateStr}.xlsx`);
     }
 
     // -------------------------------------------------------------
     // UTILITIES
     // -------------------------------------------------------------
+    formatDate(isoStr) {
+      if (!isoStr) return '--';
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      return d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
     formatDateTime(isoStr) {
       if (!isoStr) return '--';
       const d = new Date(isoStr);
