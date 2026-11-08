@@ -194,6 +194,12 @@
 
           <!-- Header Actions -->
           <div class="flex items-center gap-2">
+            <!-- Link to GTCO-LEDGER Advance & Bill Platform -->
+            <a href="https://smpneel0212-commits.github.io/GTCO-LEDGER/" target="_blank" title="Open GTCO Advance & Bill Settlement Ledger" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold shadow-xs transition border border-emerald-700">
+              <i data-lucide="hand-coins" class="w-3.5 h-3.5 text-amber-300"></i>
+              <span class="hidden sm:inline">GTCO Ledger</span>
+              <span class="text-[10px] bg-emerald-700 text-emerald-100 px-1.5 py-0.2 rounded font-mono">ADV</span>
+            </a>
             <!-- Excel Export -->
             <button onclick="app.exportToExcel()" title="Export Inward, Outward & Ledger to Excel" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition">
               <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
@@ -217,7 +223,7 @@
       </div>
 
       <!-- Mobile Navigation Sub-bar -->
-      <div class="md:hidden border-t border-slate-200 bg-white grid grid-cols-5 p-1 text-center">
+      <div class="md:hidden border-t border-slate-200 bg-white grid grid-cols-6 p-1 text-center">
         <button id="mob-nav-inward" onclick="app.navigate('inward')" class="mob-nav-tab active flex flex-col items-center justify-center py-2 text-[10px] font-bold text-slate-600">
           <i data-lucide="arrow-down-left" class="w-4 h-4 mb-0.5 text-emerald-600"></i>
           <span>Inward</span>
@@ -234,6 +240,10 @@
           <i data-lucide="wheat" class="w-4 h-4 mb-0.5 text-emerald-700"></i>
           <span>Loose</span>
         </button>
+        <a href="https://smpneel0212-commits.github.io/GTCO-LEDGER/" target="_blank" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[10px] font-bold text-emerald-800">
+          <i data-lucide="hand-coins" class="w-4 h-4 mb-0.5 text-amber-600"></i>
+          <span>Ledger</span>
+        </a>
         <button id="mob-nav-master" onclick="app.navigate('master')" class="mob-nav-tab flex flex-col items-center justify-center py-2 text-[10px] font-bold text-slate-600">
           <i data-lucide="sliders" class="w-4 h-4 mb-0.5"></i>
           <span>Masters</span>
@@ -592,6 +602,7 @@
                   <th class="py-3 px-4">Mobile / Contact</th>
                   <th class="py-3 px-4">Village / Address</th>
                   <th class="py-3 px-4">Notes</th>
+                  <th class="py-3 px-4 text-right">Advances / Seeds (GTCO-LEDGER)</th>
                   <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>

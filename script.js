@@ -1456,21 +1456,48 @@
     renderMasterFarmers() {
       const tbody = document.getElementById('master-farmers-table-body');
       if (this.state.masters.farmers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400 text-xs">No farmers added yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400 text-xs">No farmers added yet.</td></tr>`;
         return;
       }
-      tbody.innerHTML = this.state.masters.farmers.map(f => `
+
+      // Check linked GTCO-LEDGER data from shared domain localStorage
+      let ledgerAdvances = [];
+      try {
+        const rawLedger = localStorage.getItem('GTCO_LEDGER_DATA_V2');
+        if (rawLedger) {
+          const parsedLedger = JSON.parse(rawLedger);
+          if (parsedLedger && parsedLedger.advances) {
+            ledgerAdvances = parsedLedger.advances;
+          }
+        }
+      } catch (e) {
+        console.warn('GTCO-LEDGER data read skipped', e);
+      }
+
+      tbody.innerHTML = this.state.masters.farmers.map(f => {
+        // Find matching farmer advances in GTCO-LEDGER
+        const fNameClean = (f.name || '').trim().toLowerCase();
+        const matches = ledgerAdvances.filter(a => (a.farmerName || '').trim().toLowerCase() === fNameClean || (a.farmerId || '') === f.id);
+        const unpaidBal = matches.reduce((sum, a) => sum + (Number(a.unpaidBalance) || 0), 0);
+        const seedAdv = matches.filter(a => (a.purpose || '').toLowerCase().includes('seed'));
+
+        const ledgerBadge = unpaidBal > 0
+          ? `<a href="https://smpneel0212-commits.github.io/GTCO-LEDGER/?farmer=${encodeURIComponent(f.name)}" target="_blank" class="inline-flex items-center gap-1 font-mono font-bold text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 hover:bg-amber-100" title="Unpaid Advance / Seed Balance in GTCO-LEDGER">₹${unpaidBal.toLocaleString('en-IN')} ${seedAdv.length > 0 ? '🌱' : ''} <i data-lucide="arrow-up-right" class="w-3 h-3 text-amber-600"></i></a>`
+          : `<a href="https://smpneel0212-commits.github.io/GTCO-LEDGER/?farmer=${encodeURIComponent(f.name)}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100" title="Record Advance / Bill in GTCO-LEDGER">Settle ADV <i data-lucide="external-link" class="w-3 h-3"></i></a>`;
+
+        return `
         <tr class="hover:bg-slate-50">
           <td class="py-2.5 px-4 font-bold text-slate-900">${this.escape(f.name)}</td>
           <td class="py-2.5 px-4 text-slate-600">${this.escape(f.mobile || '--')}</td>
           <td class="py-2.5 px-4 font-semibold text-blue-700">${this.escape(f.village || '--')}</td>
           <td class="py-2.5 px-4 text-slate-500 text-xs">${this.escape(f.notes || '--')}</td>
+          <td class="py-2.5 px-4 text-right">${ledgerBadge}</td>
           <td class="py-2.5 px-4 text-right space-x-1">
             <button onclick="app.editFarmer('${f.id}')" class="p-1 text-slate-600 hover:text-brand-700" title="Edit"><i data-lucide="edit" class="w-3.5 h-3.5"></i></button>
             <button onclick="app.deleteFarmer('${f.id}')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     renderMasterCommodities() {
